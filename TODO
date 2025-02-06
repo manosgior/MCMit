@@ -1,5 +1,2 @@
-- Create 156-qubit default coupling map
-- Create DQC of 2 and 3 156-qubit maps
-- Tweak noise model (currently I think the random numbers are not correct)
-- Fix noise model with seed for reproducability
-- Save backends for future use
+- Create a DQC of 3 133-qubit coupling maps
+- 

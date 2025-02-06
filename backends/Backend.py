@@ -10,6 +10,7 @@ from itertools import islice
 
 import matplotlib.pyplot as plt
 import networkx as nx
+from rustworkx import EdgeList
 from networkx.algorithms import bipartite
 import numpy as np
 import pickle
@@ -36,10 +37,19 @@ def heavyHexEagleCouplingMap():
     return backend.coupling_map
 
 def heavySquareHeronCouplingMap():
-    coupling_map = CouplingMap.from_heavy_square(7, bidirectional=False)
-    print(coupling_map)
+    service = QiskitRuntimeService(instance="ibm-q/open/main")
+    backend = service.backend("ibm_kyiv")
 
-    return coupling_map
+    base_coupling_map = backend.coupling_map
+
+    base_coupling_map.add_edge(13, 127)
+    base_coupling_map.add_edge(113, 128) 
+    base_coupling_map.add_edge(117, 129)
+    base_coupling_map.add_edge(121, 130)
+    base_coupling_map.add_edge(124, 131)
+    base_coupling_map.add_edge(128, 132)
+
+    return base_coupling_map
 
 def DQCCouplingMap(coupling_map1: CouplingMap, coupling_map2: CouplingMap, endpoints: list):
     edges_1 = coupling_map1.get_edges()
@@ -61,38 +71,24 @@ def heavyHexLargeLayers(coupling_map: CouplingMap):
     counter = 0
     edges = coupling_map.get_edges()
 
-    it = iter(edges)
-    groups = []
-    for _ in range(14):  
-        groups.append(list(islice(it, 14)))
-        groups.append(list(islice(it, 4)))
-
-    real_groups = []
-
-    for g in groups:
-        set = {}
-        for elements in g:
-            set.add(elements[0])
-            set.add(elements[1])
-        
-
-    #for i, g in enumerate(groups):
-
-
-    print(groups)
-    return groups
-
-    for i in range(14):
-        if i % 2 == 0:
-            layers[i] = [i + counter for i in range(15)]
-            counter = counter + 15
-        else:
-            layers[i] = [i + counter for i in range(4)]
-            counter = counter + 4
-
+    chains = []
+    edges = sorted(edges)
     
+    while edges:
+        chain = [edges.pop(0)]
+        while edges:
+            for i, (a, b) in enumerate(edges):
+                if chain[-1][1] == a:
+                    chain.append((a, b))
+                    edges.pop(i)
+                    break
+            else:
+                break
+        chains.append(chain)
+
+    print(chains)
         
-    return layers
+    return chains
 
 def printCouplingMap(coupling_map: CouplingMap, layers: dict):
     edges = coupling_map.get_edges()
@@ -203,16 +199,25 @@ def constructDQCMedium():
 
     return backend_medium
 
+def constructDQCLarge():
+    endpoints, map_large = DQCCouplingMap(heavySquareHeronCouplingMap(), heavySquareHeronCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
+    backend_large = customBackend(num_qubits=266, coupling_map=map_large)
+    backend_large.addNoiseDelayToRemoteGates(endpoints)
+
+    return backend_large
+
 #bs = constructDQCSmall()
 #bm = constructDQCMedium()
+bl = constructDQCLarge()
 
 #saveBackend(bs, "guadalupeDQC")
 #saveBackend(bm, "KyivDQC")
+saveBackend(bl, "FezDQC")
 
-def test(backend: str = "KyivDQC"):
+def test(backend: str = "FezDQC"):
     #bs = loadBackend("guadalupeDQC")
     #bm = loadBackend("KyivDQC")
-    backend - loadBackend(backend)
+    backend = loadBackend(backend)
 
     qc = QuantumCircuit(5)
     qc.h(0)
@@ -221,15 +226,11 @@ def test(backend: str = "KyivDQC"):
 
     qc.measure_all()
 
-    #print(qc)
+    qc_t = transpile(qc, backend)
 
-    #qc_s = transpile(qc, bs)
-    qc_m = transpile(qc, backend)
+    print(qc_t)
 
-    #print(qc_s)
-    print(qc_m)
+test()
 
-#test()
-cmap = heavySquareHeronCouplingMap()
-printCouplingMap(cmap, heavyHexLargeLayers(cmap))
+
 
