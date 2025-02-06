@@ -6,8 +6,11 @@ from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers import QubitProperties
 from qiskit_ibm_runtime import QiskitRuntimeService
 
+from itertools import islice
+
 import matplotlib.pyplot as plt
 import networkx as nx
+from networkx.algorithms import bipartite
 import numpy as np
 import pickle
 
@@ -15,7 +18,7 @@ import pickle
 def defaultGateSet():
     return ["id", "sx", "x", "rz", "rzz", "cz", "rx"]
 
-def defaultCouplingMap():
+def GuadalupeCouplingMap():
     return CouplingMap([[0, 1], [1, 4], [4, 7], [6, 7], [7, 10], [10, 12], [12, 15], [1, 2], [2, 3], [3, 5], [5, 8], [8, 11], [11, 14], [12, 13], [13, 14], [8,9]])
 
 
@@ -32,6 +35,11 @@ def heavyHexEagleCouplingMap():
 
     return backend.coupling_map
 
+def heavySquareHeronCouplingMap():
+    coupling_map = CouplingMap.from_heavy_square(7, bidirectional=False)
+    print(coupling_map)
+
+    return coupling_map
 
 def DQCCouplingMap(coupling_map1: CouplingMap, coupling_map2: CouplingMap, endpoints: list):
     edges_1 = coupling_map1.get_edges()
@@ -45,11 +53,53 @@ def DQCCouplingMap(coupling_map1: CouplingMap, coupling_map2: CouplingMap, endpo
 
     return new_endpoints_tuple, new_coupling_map
 
-def printCouplingMap(coupling_map: CouplingMap):
+def heavyHexSmallLayers():
+    return {"a": [6, 22], "b": [0, 1, 4, 7, 10, 12, 15, 16, 17, 20, 23, 26, 28, 31], "c": [2, 13, 18, 29], "d": [3, 5, 8, 11, 14, 19, 21, 24, 27, 30], "e": [9, 25]}
+
+def heavyHexLargeLayers(coupling_map: CouplingMap):
+    layers = {}
+    counter = 0
+    edges = coupling_map.get_edges()
+
+    it = iter(edges)
+    groups = []
+    for _ in range(14):  
+        groups.append(list(islice(it, 14)))
+        groups.append(list(islice(it, 4)))
+
+    real_groups = []
+
+    for g in groups:
+        set = {}
+        for elements in g:
+            set.add(elements[0])
+            set.add(elements[1])
+        
+
+    #for i, g in enumerate(groups):
+
+
+    print(groups)
+    return groups
+
+    for i in range(14):
+        if i % 2 == 0:
+            layers[i] = [i + counter for i in range(15)]
+            counter = counter + 15
+        else:
+            layers[i] = [i + counter for i in range(4)]
+            counter = counter + 4
+
+    
+        
+    return layers
+
+def printCouplingMap(coupling_map: CouplingMap, layers: dict):
     edges = coupling_map.get_edges()
     G = nx.Graph()
     G.add_edges_from(edges)
-    pos = nx.spring_layout(G, seed=42)
+
+    pos = nx.multipartite_layout(G, subset_key=layers, align='horizontal')
 
     nx.draw(G, with_labels=True, node_color="skyblue", edge_color="gray", pos=pos)
     plt.savefig("coupling_map.png", dpi=300, bbox_inches="tight")
@@ -57,7 +107,7 @@ def printCouplingMap(coupling_map: CouplingMap):
 
 class customBackend(GenericBackendV2):
     
-    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = defaultCouplingMap(), basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None):
+    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None):
         self.name = name
         assert num_qubits == coupling_map.size()
         super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, seed=1)
@@ -66,11 +116,8 @@ class customBackend(GenericBackendV2):
             self.addStateOfTheArtNoise()
         else:
             for instruction, properties_dict in noise_model.items():
-                #print(instruction, properties_dict)
                 if properties_dict is not None:
                     for p in properties_dict.items():
-                        #print(p)
-                        #exit()
                         self.target.update_instruction_properties(instruction, p[0], p[1])
 
         if qubit_properties == None:
@@ -128,6 +175,9 @@ class customBackend(GenericBackendV2):
 
         self.target.qubit_properties = qubits
 
+    def distance(self, q0: int, q1: int):
+        return self.coupling_map.distance(q0, q1)
+
 def saveBackend(backend: customBackend, filename: str):
     with open(filename, "wb") as f:
         pickle.dump(backend, f)
@@ -139,7 +189,7 @@ def loadBackend(filename: str):
     return backend
 
 def constructDQCSmall(): 
-    endpoints, map_small = DQCCouplingMap(defaultCouplingMap(), defaultCouplingMap(), [[13, 2], [15, 0]])
+    endpoints, map_small = DQCCouplingMap(GuadalupeCouplingMap(), GuadalupeCouplingMap(), [[13, 2], [15, 0]])
     backend_small = customBackend(num_qubits=32, coupling_map=map_small)
     backend_small.addNoiseDelayToRemoteGates(endpoints)
 
@@ -151,28 +201,35 @@ def constructDQCMedium():
     backend_medium = customBackend(num_qubits=254, coupling_map=map_medium, noise_model=noise_model_medium, qubit_properties=props_medium, basis_gates=["ecr", "id", "rz", "sx", "x"])
     backend_medium.addNoiseDelayToRemoteGates(endpoints, gates=["ecr"])
 
+    return backend_medium
+
 #bs = constructDQCSmall()
 #bm = constructDQCMedium()
 
 #saveBackend(bs, "guadalupeDQC")
 #saveBackend(bm, "KyivDQC")
 
-bs = loadBackend("guadalupeDQC")
-bm = loadBackend("KyivDQC")
+def test(backend: str = "KyivDQC"):
+    #bs = loadBackend("guadalupeDQC")
+    #bm = loadBackend("KyivDQC")
+    backend - loadBackend(backend)
 
-qc = QuantumCircuit(5)
-qc.h(0)
-for i in range(1, 5):
-    qc.cx(i - 1, i)
+    qc = QuantumCircuit(5)
+    qc.h(0)
+    for i in range(1, 5):
+        qc.cx(i - 1, i)
 
-qc.measure_all()
+    qc.measure_all()
 
-print(qc)
+    #print(qc)
 
-qc_s = transpile(qc, bs)
-qc_m = transpile(qc, bm)
+    #qc_s = transpile(qc, bs)
+    qc_m = transpile(qc, backend)
 
-print(qc_s)
-print(qc_m)
+    #print(qc_s)
+    print(qc_m)
 
+#test()
+cmap = heavySquareHeronCouplingMap()
+printCouplingMap(cmap, heavyHexLargeLayers(cmap))
 
