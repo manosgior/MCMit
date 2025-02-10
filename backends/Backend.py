@@ -7,13 +7,18 @@ from qiskit.providers import QubitProperties
 from qiskit_ibm_runtime import QiskitRuntimeService
 
 from itertools import islice
+from collections import defaultdict
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import networkx as nx
 from rustworkx import EdgeList
 from networkx.algorithms import bipartite
 import numpy as np
 import pickle
+import sys
+
+from plotting import utils
 
 
 def defaultGateSet():
@@ -104,9 +109,9 @@ def printCouplingMap(coupling_map: CouplingMap, layers: dict):
 class customBackend(GenericBackendV2):
     
     def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None):
-        self.name = name
         assert num_qubits == coupling_map.size()
         super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, seed=1)
+        self.name = name
 
         if noise_model == None:
             self.addStateOfTheArtNoise()
@@ -174,6 +179,59 @@ class customBackend(GenericBackendV2):
     def distance(self, q0: int, q1: int):
         return self.coupling_map.distance(q0, q1)
 
+    def plotGateProbDistribution(self):
+        gate_error_dict = defaultdict(list)
+
+        group_1 = {"rx", "ry", "rz", "h", "x", "y", "z", "s", "sdg", "t", "sx", "id"}  # Single-qubit gates
+        group_2 = {"cx", "ecr", "cz", "rzz"}  # Two-qubit gates
+        group_3 = {"measure"}  # measurement
+
+        group_titles = {
+            1: "Single-Qubit Gates",
+            2: "Two-Qubit Gates",
+            3: "Measurements"
+        }
+
+        error_groups = {1: defaultdict(list), 2: defaultdict(list), 3: defaultdict(list)}
+
+        for gate, inst_map in self.target.items():
+            for qubits, properties in inst_map.items():
+                if properties is not None and properties.error is not None:
+                    if gate in group_1:
+                        error_groups[1][gate].append(properties.error)
+                    elif gate in group_2:
+                        error_groups[2][gate].append(properties.error)
+                    else:
+                        error_groups[3][gate].append(properties.error) 
+        
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
+
+        colors = utils.colors_deep
+        markers = utils.line_markers
+
+        for i, (group, gate_error_dict) in enumerate(error_groups.items(), start=1):
+            ax = axes[i - 1] 
+            for j, (gate, errors) in enumerate(gate_error_dict.items(), start=1):
+                if errors: 
+                    sorted_errors = np.sort(errors)
+                    median = np.median(sorted_errors)
+                    cdf = np.arange(1, len(sorted_errors) + 1) / len(sorted_errors)
+                    ax.plot(sorted_errors, cdf, marker=markers[j], linestyle="-", label=str(gate), color=colors[j])
+                    ax.axvline(median, marker=markers[j], color=colors[j])
+
+            ax.set_xlabel("Gate Error Probability")
+            ax.set_title(group_titles[i])
+            ax.grid(True, linestyle="--", alpha=0.5)
+            #ax.legend(title="Gate Type", bbox_to_anchor=(1.05, 1), loc="upper left")
+            ax.legend(title="Gate Type")
+
+        axes[0].set_ylabel("Cumulative Probability")
+        #plt.title("CDF of Gate Error Probabilities per Gate")
+        #plt.legend(title="Gate Type", bbox_to_anchor=(1.05, 1), loc="upper left")
+        #plt.grid(True, linestyle="--", alpha=0.5)
+        plt.tight_layout()
+        plt.savefig("backends/" + self.name + "_gate_probs.png")
+
 def saveBackend(backend: customBackend, filename: str):
     with open(filename, "wb") as f:
         pickle.dump(backend, f)
@@ -184,35 +242,33 @@ def loadBackend(filename: str):
 
     return backend
 
-def constructDQCSmall(): 
+def constructDQCSmall(noise: float = 0.03): 
     endpoints, map_small = DQCCouplingMap(GuadalupeCouplingMap(), GuadalupeCouplingMap(), [[13, 2], [15, 0]])
-    backend_small = customBackend(num_qubits=32, coupling_map=map_small)
-    backend_small.addNoiseDelayToRemoteGates(endpoints)
+    backend_small = customBackend(name="GuadalupeDQC_", num_qubits=32, coupling_map=map_small)
+    backend_small.addNoiseDelayToRemoteGates(endpoints, error=noise)
 
     return backend_small
 
-def constructDQCMedium():
+def constructDQCMedium(noise: float = 0.03):
     endpoints, map_medium = DQCCouplingMap(heavyHexEagleCouplingMap(), heavyHexEagleCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
     props_medium, noise_model_medium = getRealNoiseModelsFromEagle()
-    backend_medium = customBackend(num_qubits=254, coupling_map=map_medium, noise_model=noise_model_medium, qubit_properties=props_medium, basis_gates=["ecr", "id", "rz", "sx", "x"])
-    backend_medium.addNoiseDelayToRemoteGates(endpoints, gates=["ecr"])
+    backend_medium = customBackend(name="KyivDQC_",num_qubits=254, coupling_map=map_medium, noise_model=noise_model_medium, qubit_properties=props_medium, basis_gates=["ecr", "id", "rz", "sx", "x"])
+    backend_medium.addNoiseDelayToRemoteGates(endpoints, gates=["ecr"], error=noise)
 
     return backend_medium
 
-def constructDQCLarge():
+def constructDQCLarge(noise: float = 0.03):
     endpoints, map_large = DQCCouplingMap(heavySquareHeronCouplingMap(), heavySquareHeronCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
-    backend_large = customBackend(num_qubits=266, coupling_map=map_large)
-    backend_large.addNoiseDelayToRemoteGates(endpoints)
+    backend_large = customBackend(name="FezDQC_",num_qubits=266, coupling_map=map_large)
+    backend_large.addNoiseDelayToRemoteGates(endpoints, error=noise)
 
     return backend_large
 
-#bs = constructDQCSmall()
-#bm = constructDQCMedium()
-bl = constructDQCLarge()
+def generateBackends(backend_generator, noise: list[float] = [0.05, 0.1, 0.15]):
+    for n in noise:
+        backend = backend_generator(n)
+        saveBackend(backend, backend.name + str(n))
 
-#saveBackend(bs, "guadalupeDQC")
-#saveBackend(bm, "KyivDQC")
-saveBackend(bl, "FezDQC")
 
 def test(backend: str = "FezDQC"):
     #bs = loadBackend("guadalupeDQC")
@@ -230,7 +286,11 @@ def test(backend: str = "FezDQC"):
 
     print(qc_t)
 
-test()
+#generateBackends(constructDQCSmall)
+#generateBackends(constructDQCMedium)
+#generateBackends(constructDQCLarge)
 
+b = loadBackend("backends/GuadalupeDQC_0.1")
+b.plotGateProbDistribution()
 
 
