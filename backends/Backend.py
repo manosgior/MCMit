@@ -222,13 +222,9 @@ class customBackend(GenericBackendV2):
             ax.set_xlabel("Gate Error Probability")
             ax.set_title(group_titles[i])
             ax.grid(True, linestyle="--", alpha=0.5)
-            #ax.legend(title="Gate Type", bbox_to_anchor=(1.05, 1), loc="upper left")
             ax.legend(title="Gate Type")
 
         axes[0].set_ylabel("Cumulative Probability")
-        #plt.title("CDF of Gate Error Probabilities per Gate")
-        #plt.legend(title="Gate Type", bbox_to_anchor=(1.05, 1), loc="upper left")
-        #plt.grid(True, linestyle="--", alpha=0.5)
         plt.tight_layout()
         plt.savefig("backends/" + self.name + "_gate_probs.png")
 
