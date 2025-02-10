@@ -221,6 +221,7 @@ class customBackend(GenericBackendV2):
 
             ax.set_xlabel("Gate Error Probability")
             ax.set_title(group_titles[i])
+            ax.set_xscale("log")
             ax.grid(True, linestyle="--", alpha=0.5)
             ax.legend(title="Gate Type")
 
@@ -287,6 +288,9 @@ def test(backend: str = "FezDQC"):
 #generateBackends(constructDQCLarge)
 
 b = loadBackend("backends/GuadalupeDQC_0.1")
+b2 = loadBackend("backends/KyivDQC_0.1")
 b.plotGateProbDistribution()
+#print(b2.target)
+b2.plotGateProbDistribution()
 
 

@@ -1,0 +1,30 @@
+OPENQASM 2.0;
+include "qelib1.inc";
+gate state_preparation(param0) q0,q1,q2,q3 {  }
+gate initialize(param0) q0,q1,q2,q3 { reset q0; reset q1; reset q2; reset q3; state_preparation(0) q0,q1,q2,q3; }
+qreg q[7];
+creg c[3];
+creg meas[7];
+initialize(0) q[0],q[2],q[4],q[6];
+barrier q[0],q[1],q[2],q[3],q[4],q[5],q[6];
+cx q[0],q[1];
+cx q[2],q[1];
+measure q[1] -> c[0];
+reset q[1];
+cx q[2],q[3];
+cx q[4],q[3];
+measure q[3] -> c[1];
+reset q[3];
+cx q[4],q[5];
+cx q[6],q[5];
+measure q[5] -> c[2];
+reset q[5];
+barrier q[0],q[1],q[2],q[3],q[4],q[5],q[6];
+barrier q[0],q[1],q[2],q[3],q[4],q[5],q[6];
+measure q[0] -> meas[0];
+measure q[1] -> meas[1];
+measure q[2] -> meas[2];
+measure q[3] -> meas[3];
+measure q[4] -> meas[4];
+measure q[5] -> meas[5];
+measure q[6] -> meas[6];
