@@ -129,9 +129,9 @@ class customBackend(GenericBackendV2):
     def updateGateProps(self, duration: int = 70, error_med: float = 0.002, error_min: float = 0.0001, error_max: float = 0.06, gate: str = "cz"):
         gates = self.target[gate].items()
         target_ratio = (error_med - error_min) / (error_max - error_min)
-        alpha = 0.5
+        alpha = 0.3
         beta = alpha * (1 - target_ratio) / target_ratio
-        beta = 2
+        beta = 3
         values = []
 
         for g in gates:
@@ -165,6 +165,7 @@ class customBackend(GenericBackendV2):
 
     def addStateOfTheArtQubits(self):
         qubits = []
+        
         for i in range(self.num_qubits):
             t1 = np.random.normal(190, 100, 1)
             t1 = np.clip(t1, 10, 500)
@@ -264,7 +265,7 @@ def constructDQCLarge(noise: float = 0.03):
 def generateBackends(backend_generator, noise: list[float] = [0.05, 0.1, 0.15]):
     for n in noise:
         backend = backend_generator(n)
-        saveBackend(backend, backend.name + str(n))
+        saveBackend(backend, "backends/" + backend.name + str(n))
 
 
 def test(backend: str = "FezDQC"):
@@ -285,12 +286,13 @@ def test(backend: str = "FezDQC"):
 
 #generateBackends(constructDQCSmall)
 #generateBackends(constructDQCMedium)
-#generateBackends(constructDQCLarge)
+generateBackends(constructDQCLarge)
 
-b = loadBackend("backends/GuadalupeDQC_0.1")
-b2 = loadBackend("backends/KyivDQC_0.1")
-b.plotGateProbDistribution()
+#b = loadBackend("backends/GuadalupeDQC_0.1")
+#b2 = loadBackend("backends/KyivDQC_0.1")
+b3 = loadBackend("backends/FezDQC_0.1")
+b3.plotGateProbDistribution()
 #print(b2.target)
-b2.plotGateProbDistribution()
+#b2.plotGateProbDistribution()
 
 
