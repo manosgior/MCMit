@@ -1,20 +1,33 @@
 import os
 import re
 import sys
+from collections import defaultdict, OrderedDict
+
 from qiskit import QuantumCircuit
 
-def get_unique_benchmarks(base_directory: str):
+def get_unique_benchmarks(dirs: list[str]):
     unique_folders = set()
-    benchmark_suites = os.listdir(base_directory)
+    sizes = defaultdict(int)
+    counter = 0
 
-    for benchmark_suite in benchmark_suites:
-        if os.path.isdir(os.path.join(base_directory, benchmark_suite)):
-            path = os.path.join(base_directory, benchmark_suite)
-            for filename in os.listdir(path):
-                if os.path.isdir(os.path.join(path, filename)):
-                    unique_folders.add(filename)        
+    for d in dirs:
+        for folder in os.listdir(d):
+            folder_path = os.path.join(d, folder)
+            if os.path.isdir(folder_path):
+                unique_folders.add(folder)
 
-    return unique_folders
+    for d in dirs:
+         for root, dirs, files in os.walk(d):
+            for f in files:
+                for file in files:
+                    match = re.match(r'n(\d+)\.qasm$', file)
+                    if match:
+                        number = int(match.group(1))
+                        sizes[number] += 1  
+                        counter += 1       
+
+    return len(unique_folders), OrderedDict(sorted(sizes.items())), counter
+
 
 def count_all_benchmarks(base_directory: str, nqbits: tuple[int, int] = (2, 1000)):
     KV = {}
@@ -79,8 +92,8 @@ def count_non_local_ops(base_directory: str, nqbits: tuple[int, int] = (2, 1000)
 
     return sorted(KV.items())
 
-print(get_unique_benchmarks("."))
-
-nbenchmarks, distribution = count_all_benchmarks(".")
-print(nbenchmarks, distribution)
-print(count_non_local_ops("."))
+print(get_unique_benchmarks(["benchmarks/MQTBench", "benchmarks/QASMBench", "benchmarks/QOSLib", "benchmarks/Supermarq"]))
+#print(get_unique_benchmarks(["benchmarks/QOSLib"]))
+#nbenchmarks, distribution = count_all_benchmarks(".")
+#print(nbenchmarks, distribution)
+#print(count_non_local_ops("."))
