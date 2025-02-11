@@ -26,7 +26,7 @@ def get_unique_benchmarks(dirs: list[str]):
                         sizes[number] += 1  
                         counter += 1       
 
-    return len(unique_folders), OrderedDict(sorted(sizes.items())), counter
+    return unique_folders, OrderedDict(sorted(sizes.items())), counter
 
 
 def count_all_benchmarks(base_directory: str, nqbits: tuple[int, int] = (2, 1000)):
@@ -92,7 +92,13 @@ def count_non_local_ops(base_directory: str, nqbits: tuple[int, int] = (2, 1000)
 
     return sorted(KV.items())
 
-print(get_unique_benchmarks(["benchmarks/MQTBench", "benchmarks/QASMBench", "benchmarks/QOSLib", "benchmarks/Supermarq"]))
+folders, sizes, n_files = get_unique_benchmarks(["benchmarks/MQTBench", "benchmarks/QASMBench", "benchmarks/QOSLib", "benchmarks/Supermarq"])
+print(folders)
+print(len(folders))
+print(len(sizes.items()))
+print(sizes)
+print(n_files)
+print(count_all_benchmarks("benchmarks"))
 #print(get_unique_benchmarks(["benchmarks/QOSLib"]))
 #nbenchmarks, distribution = count_all_benchmarks(".")
 #print(nbenchmarks, distribution)

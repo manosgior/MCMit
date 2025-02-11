@@ -38,6 +38,7 @@ def getRealNoiseModelsFromEagle():
 def heavyHexEagleCouplingMap():
     service = QiskitRuntimeService(instance="ibm-q/open/main")
     backend = service.backend("ibm_kyiv")
+    #backend = service.backend("ibm_sherbrooke")
 
     return backend.coupling_map
 
@@ -249,20 +250,22 @@ def constructDQCSmall(noise: float = 0.03):
 
 def constructDQCMedium(noise: float = 0.03):
     endpoints, map_medium = DQCCouplingMap(heavyHexEagleCouplingMap(), heavyHexEagleCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
-    props_medium, noise_model_medium = getRealNoiseModelsFromEagle()
-    backend_medium = customBackend(name="KyivDQC_",num_qubits=254, coupling_map=map_medium, noise_model=noise_model_medium, qubit_properties=props_medium, basis_gates=["ecr", "id", "rz", "sx", "x"])
-    backend_medium.addNoiseDelayToRemoteGates(endpoints, gates=["ecr"], error=noise)
+    #props_medium, noise_model_medium = getRealNoiseModelsFromEagle()
+    #backend_medium = customBackend(name="KyivDQC_",num_qubits=254, coupling_map=map_medium, noise_model=noise_model_medium, qubit_properties=props_medium, basis_gates=["ecr", "id", "rz", "sx", "x"])
+    backend_medium = customBackend(name="KyivDQC_",num_qubits=254, coupling_map=map_medium)
+    backend_medium.addNoiseDelayToRemoteGates(endpoints, error=noise)
 
     return backend_medium
 
 def constructDQCLarge(noise: float = 0.03):
-    endpoints, map_large = DQCCouplingMap(heavySquareHeronCouplingMap(), heavySquareHeronCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
-    backend_large = customBackend(name="FezDQC_",num_qubits=266, coupling_map=map_large)
-    backend_large.addNoiseDelayToRemoteGates(endpoints, error=noise)
+    endpoints, map_interm = DQCCouplingMap(heavySquareHeronCouplingMap(), heavySquareHeronCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
+    endpoints_new, map_large = DQCCouplingMap(map_interm, heavySquareHeronCouplingMap(), [[165, 18], [184, 37], [203, 56], [222, 75]])
+    backend_large = customBackend(name="FezDQC_",num_qubits=399, coupling_map=map_large)
+    backend_large.addNoiseDelayToRemoteGates(endpoints + endpoints_new, error=noise)
 
     return backend_large
 
-def generateBackends(backend_generator, noise: list[float] = [0.05, 0.1, 0.15]):
+def generateBackends(backend_generator, noise: list[float] = [0.015, 0.03, 0.05]):
     for n in noise:
         backend = backend_generator(n)
         saveBackend(backend, "backends/" + backend.name + str(n))
@@ -286,12 +289,14 @@ def test(backend: str = "FezDQC"):
 
 #generateBackends(constructDQCSmall)
 #generateBackends(constructDQCMedium)
-generateBackends(constructDQCLarge)
+#generateBackends(constructDQCLarge)
 
-#b = loadBackend("backends/GuadalupeDQC_0.1")
-#b2 = loadBackend("backends/KyivDQC_0.1")
-b3 = loadBackend("backends/FezDQC_0.1")
-b3.plotGateProbDistribution()
+#b = loadBackend("backends/GuadalupeDQC_0.015")
+#b2 = loadBackend("backends/KyivDQC_0.015")
+#b3 = loadBackend("backends/FezDQC_0.015")
+#b.plotGateProbDistribution()
+#b2.plotGateProbDistribution()
+#b3.plotGateProbDistribution()
 #print(b2.target)
 #b2.plotGateProbDistribution()
 
