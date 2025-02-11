@@ -107,12 +107,13 @@ def printCouplingMap(coupling_map: CouplingMap, layers: dict):
     plt.savefig("coupling_map.png", dpi=300, bbox_inches="tight")
 
 
-class customBackend(GenericBackendV2):
+class customBackend(GenericBackendV2):    
     
-    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None):
+    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None, remote_gates: list[tuple] = []):
         assert num_qubits == coupling_map.size()
         super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, seed=1)
         self.name = name
+        self.remote_gates = remote_gates
 
         if noise_model == None:
             self.addStateOfTheArtNoise()
@@ -243,7 +244,7 @@ def loadBackend(filename: str):
 
 def constructDQCSmall(noise: float = 0.03): 
     endpoints, map_small = DQCCouplingMap(GuadalupeCouplingMap(), GuadalupeCouplingMap(), [[13, 2], [15, 0]])
-    backend_small = customBackend(name="GuadalupeDQC_", num_qubits=32, coupling_map=map_small)
+    backend_small = customBackend(name="GuadalupeDQC_", num_qubits=32, coupling_map=map_small, remote_gates=endpoints)
     backend_small.addNoiseDelayToRemoteGates(endpoints, error=noise)
 
     return backend_small
@@ -252,7 +253,7 @@ def constructDQCMedium(noise: float = 0.03):
     endpoints, map_medium = DQCCouplingMap(heavyHexEagleCouplingMap(), heavyHexEagleCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
     #props_medium, noise_model_medium = getRealNoiseModelsFromEagle()
     #backend_medium = customBackend(name="KyivDQC_",num_qubits=254, coupling_map=map_medium, noise_model=noise_model_medium, qubit_properties=props_medium, basis_gates=["ecr", "id", "rz", "sx", "x"])
-    backend_medium = customBackend(name="KyivDQC_",num_qubits=254, coupling_map=map_medium)
+    backend_medium = customBackend(name="KyivDQC_",num_qubits=254, coupling_map=map_medium, remote_gates=endpoints)
     backend_medium.addNoiseDelayToRemoteGates(endpoints, error=noise)
 
     return backend_medium
@@ -260,8 +261,9 @@ def constructDQCMedium(noise: float = 0.03):
 def constructDQCLarge(noise: float = 0.03):
     endpoints, map_interm = DQCCouplingMap(heavySquareHeronCouplingMap(), heavySquareHeronCouplingMap(), [[32, 18], [51, 37], [70, 56], [89, 75]])
     endpoints_new, map_large = DQCCouplingMap(map_interm, heavySquareHeronCouplingMap(), [[165, 18], [184, 37], [203, 56], [222, 75]])
-    backend_large = customBackend(name="FezDQC_",num_qubits=399, coupling_map=map_large)
-    backend_large.addNoiseDelayToRemoteGates(endpoints + endpoints_new, error=noise)
+    all_endpoints = endpoints + endpoints_new
+    backend_large = customBackend(name="FezDQC_",num_qubits=399, coupling_map=map_large, remote_gates=all_endpoints)
+    backend_large.addNoiseDelayToRemoteGates(all_endpoints, error=noise)
 
     return backend_large
 
@@ -287,9 +289,9 @@ def test(backend: str = "FezDQC"):
 
     print(qc_t)
 
-#generateBackends(constructDQCSmall)
-#generateBackends(constructDQCMedium)
-#generateBackends(constructDQCLarge)
+generateBackends(constructDQCSmall)
+generateBackends(constructDQCMedium)
+generateBackends(constructDQCLarge)
 
 #b = loadBackend("backends/GuadalupeDQC_0.015")
 #b2 = loadBackend("backends/KyivDQC_0.015")
