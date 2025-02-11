@@ -19,7 +19,6 @@ def idleError(time: float, t1: float, t2: float):
 def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: GenericBackendV2, onlyIdling: bool = False):
     dag = circuit_to_dag(circuit)
     fidelity = 1
-    #decoherence_fidelity = 1
     dt = backend.configuration().dt
     touched = set()
     active_times = defaultdict()
