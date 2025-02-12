@@ -146,7 +146,7 @@ class customBackend(GenericBackendV2):
         values = []
 
         for g in gates:
-            duration_rand = np.random.randint(duration - 10, duration + 10)
+            duration_rand = np.random.randint(duration - 10, duration + 10) * 1e-9
             duration_rand = round(duration_rand / self.dt) * self.dt
            
             error_rand = np.random.beta(alpha, beta)
@@ -169,7 +169,7 @@ class customBackend(GenericBackendV2):
         self.updateGateProps(gate="measure", duration=70, error_med=0.01, error_min=0.002, error_max=0.5)
 
     def addNoiseDelayToRemoteGates(self, endpoints: list[tuple], duration: int = 300, error: float = 0.03, gates: list[str] = ["cz", "rzz"]):
-        roundedDuration = round(duration / self.dt) * self.dt
+        roundedDuration = round((duration * 1e-9) / self.dt) * self.dt
         gate_props = InstructionProperties(roundedDuration, error)
         
         for g in gates:
@@ -300,9 +300,9 @@ def test(backend: str = "FezDQC"):
 
     print(qc_t)
 
-generateBackends(constructDQCSmall)
-generateBackends(constructDQCMedium)
-generateBackends(constructDQCLarge)
+#generateBackends(constructDQCSmall)
+#generateBackends(constructDQCMedium)
+#generateBackends(constructDQCLarge)
 
 #b = loadBackend("backends/GuadalupeDQC_0.015")
 #b2 = loadBackend("backends/KyivDQC_0.015")

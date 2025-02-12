@@ -15,13 +15,8 @@ def testing():
     circuits = sorted(circuits, key=getSize)
     non_local_gates_before = [c.num_nonlocal_gates() for c in circuits]
 
-    #transpiled_circuits = [transpile(c, backend) for c in circuits]
     transpiled_circuits = [transpile(c, backend, scheduling_method="alap") for c in circuits]
     non_local_gates_after = [c.num_nonlocal_gates() for c in transpiled_circuits]
-
-    #print(non_local_gates_before)
-    #print(non_local_gates_after)
-    #print(transpiled_circuits[0])
 
     for tc in transpiled_circuits:
         esp_idle = calculateExpectedSuccessProbability(circuit=tc, backend=backend, onlyIdling=True)
