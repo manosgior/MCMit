@@ -11,37 +11,39 @@ def idleError(time: float, t1: float, t2: float):
     t2 = min(t1, t2)
     rate1 = 1/t1
     rate2 = 1/t2
-    p_reset = 1-np.exp(-time*rate1)
+    p_reset = 1 - np.exp(-time * rate1)
+    #pz = 1 - np.exp(-time * rate2)
     p_z = (1-p_reset)*(1-np.exp(-time*(rate2-rate1)))/2
+    p_total = p_z + p_reset
+    #p_total  =1 - np.exp((-time * rate1) + (-time * rate2))
 
-    return p_z + p_reset
+    return p_total
 
 def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: GenericBackendV2, onlyIdling: bool = False):
-    dag = circuit_to_dag(circuit)
     fidelity = 1
     dt = backend.dt
     touched = set()
     active_times = defaultdict(int, {key: 0 for key in range(backend.num_qubits)})
     delays = defaultdict(int, {key: 0 for key in range(backend.num_qubits)})
+    data = circuit.data 
 
-    for gate in dag.gate_nodes():
-        if gate.name in ["ecr", "cx", "cz", "rzz"]:
-            q0, q1 = gate.qargs[0]._index, gate.qargs[1]._index
-            fidelity *= (1 - backend.target[gate.name][(q0, q1)].error)
-            active_times[q0] +=  backend.target[gate.name][(q0, q1)].duration
-            active_times[q1] +=  backend.target[gate.name][(q0, q1)].duration
+    for item in data:
+        if item.name in ["ecr", "cx", "cz", "rzz"]:
+            q0, q1 = circuit.find_bit(item[1][0]).index, circuit.find_bit(item[1][1]).index
+            fidelity *= (1 - backend.target[item.name][(q0, q1)].error)
+            active_times[q0] +=  backend.target[item.name][(q0, q1)].duration
+            active_times[q1] +=  backend.target[item.name][(q0, q1)].duration
             touched.add(q0)
             touched.add(q1)
-        elif gate.name == 'delay':
-            q0 = gate.qargs[0]._index
+        elif item.name == 'delay':
+            q0 = circuit.find_bit(item[1][0]).index
             if q0 in touched:
-                #qp = backend.qubit_properties(q0._index)
-                time = backend.target[gate.name][(q0)].duration * dt
-                delays[q0] += time
-                #fid *= 1-idleError(time, qp.t1, qp.t1)
+                delays[q0] += item.duration * dt
+        elif item.name == 'barrier':
+            continue
         else:
-            q = gate.qargs[0]._index
-            fidelity *= (1 - backend.target[gate.name][(q,)].error)
+            q = circuit.find_bit(item[1][0]).index
+            fidelity *= (1 - backend.target[item.name][(q,)].error)
             touched.add(q)
     if onlyIdling:
         for qubit, time in delays.items():

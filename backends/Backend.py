@@ -310,5 +310,6 @@ def test(backend: str = "FezDQC"):
 #b3.plotGateProbDistribution()
 #print(b2.target)
 #b2.plotGateProbDistribution()
+#getRealNoiseModelsFromEagle()
 
 
