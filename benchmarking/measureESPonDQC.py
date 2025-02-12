@@ -3,10 +3,9 @@ from analysis.fidelity import calculateExpectedSuccessProbability
 from analysis.properties import getSize
 from backends.Backend import loadBackend
 
+from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
-from qiskit.transpiler.passes import ALAPSchedule
-
 
 def testing():
     benchmarks = load_qasm_files(benchname="ghz", nqbits=(15, 30), benchmark_suites=["Supermarq"])

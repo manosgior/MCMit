@@ -12,10 +12,8 @@ def idleError(time: float, t1: float, t2: float):
     rate1 = 1/t1
     rate2 = 1/t2
     p_reset = 1 - np.exp(-time * rate1)
-    #pz = 1 - np.exp(-time * rate2)
     p_z = (1-p_reset)*(1-np.exp(-time*(rate2-rate1)))/2
     p_total = p_z + p_reset
-    #p_total  =1 - np.exp((-time * rate1) + (-time * rate2))
 
     return p_total
 

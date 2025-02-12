@@ -25,7 +25,7 @@ def defaultGateSet():
     return ["id", "sx", "x", "rz", "rzz", "cz", "rx"]
 
 def defaultResolutionTime():
-    return 2.2e-10
+    return 2.2222222222222221e-10 * 1e9
 
 def GuadalupeCouplingMap():
     return CouplingMap([[0, 1], [1, 4], [4, 7], [6, 7], [7, 10], [10, 12], [12, 15], [1, 2], [2, 3], [3, 5], [5, 8], [8, 11], [11, 14], [12, 13], [13, 14], [8,9]])
@@ -119,10 +119,10 @@ class customBackend(GenericBackendV2):
     
     def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), dt: float = defaultResolutionTime(),basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None, remote_gates: list[tuple] = []):
         assert num_qubits == coupling_map.size()
-        super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, seed=1)
+
+        super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, dtm=dt, seed=1)
         self.name = name
         self.remote_gates = remote_gates
-        self.dt = dt
 
         if noise_model == None:
             self.addStateOfTheArtNoise()
@@ -147,6 +147,7 @@ class customBackend(GenericBackendV2):
 
         for g in gates:
             duration_rand = np.random.randint(duration - 10, duration + 10)
+            duration_rand = round(duration_rand / self.dt) * self.dt
            
             error_rand = np.random.beta(alpha, beta)
             error_rand = error_min + (error_max - error_min) * error_rand
@@ -168,7 +169,8 @@ class customBackend(GenericBackendV2):
         self.updateGateProps(gate="measure", duration=70, error_med=0.01, error_min=0.002, error_max=0.5)
 
     def addNoiseDelayToRemoteGates(self, endpoints: list[tuple], duration: int = 300, error: float = 0.03, gates: list[str] = ["cz", "rzz"]):
-        gate_props = InstructionProperties(duration, error)
+        roundedDuration = round(duration / self.dt) * self.dt
+        gate_props = InstructionProperties(roundedDuration, error)
         
         for g in gates:
             for e in endpoints:
@@ -298,9 +300,9 @@ def test(backend: str = "FezDQC"):
 
     print(qc_t)
 
-#generateBackends(constructDQCSmall)
-#generateBackends(constructDQCMedium)
-#generateBackends(constructDQCLarge)
+generateBackends(constructDQCSmall)
+generateBackends(constructDQCMedium)
+generateBackends(constructDQCLarge)
 
 #b = loadBackend("backends/GuadalupeDQC_0.015")
 #b2 = loadBackend("backends/KyivDQC_0.015")
@@ -310,6 +312,6 @@ def test(backend: str = "FezDQC"):
 #b3.plotGateProbDistribution()
 #print(b2.target)
 #b2.plotGateProbDistribution()
-#getRealNoiseModelsFromEagle()
+
 
 
