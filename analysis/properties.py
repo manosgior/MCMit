@@ -12,5 +12,6 @@ def countRemoteGates(circuit: QuantumCircuit, remote_couplings: list[tuple]):
 def getDepth(circuit: QuantumCircuit):
     pass
 
-
+def getSize(circuit: QuantumCircuit):
+    return circuit.num_qubits
     

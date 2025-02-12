@@ -1,6 +1,6 @@
 from qiskit.circuit import QuantumCircuit
-from qiskit.compiler import transpile
-from qiskit.quantum_info import hellinger_fidelity
+#from qiskit.compiler import transpile
+#from qiskit.quantum_info import hellinger_fidelity
 from qiskit.converters import circuit_to_dag
 from qiskit.providers.fake_provider import GenericBackendV2
 
@@ -19,10 +19,10 @@ def idleError(time: float, t1: float, t2: float):
 def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: GenericBackendV2, onlyIdling: bool = False):
     dag = circuit_to_dag(circuit)
     fidelity = 1
-    dt = backend.configuration().dt
+    dt = backend.dt
     touched = set()
-    active_times = defaultdict()
-    delays = defaultdict()
+    active_times = defaultdict(int, {key: 0 for key in range(backend.num_qubits)})
+    delays = defaultdict(int, {key: 0 for key in range(backend.num_qubits)})
 
     for gate in dag.gate_nodes():
         if gate.name in ["ecr", "cx", "cz", "rzz"]:
@@ -41,12 +41,12 @@ def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: Generi
                 #fid *= 1-idleError(time, qp.t1, qp.t1)
         else:
             q = gate.qargs[0]._index
-            fidelity *= (1 - backend.target[gate.name][(q)].error)
+            fidelity *= (1 - backend.target[gate.name][(q,)].error)
             touched.add(q)
     if onlyIdling:
         for qubit, time in delays.items():
             qp = backend.qubit_properties(qubit)
-            fid *= 1-idleError(time, qp.t1, qp.t1)
+            fidelity *= 1-idleError(time, qp.t1, qp.t1)
     else:
         total_times = defaultdict()
         for qubit, time in active_times.items():
@@ -54,7 +54,7 @@ def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: Generi
 
         for qubit, time in total_times.items():
             qp = backend.qubit_properties(qubit)
-            fid *= 1-idleError(time, qp.t1, qp.t1)
+            fidelity *= 1-idleError(time, qp.t1, qp.t1)
 
     #for wire in dag.wires:
        # duration = 0.0

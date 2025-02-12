@@ -1,22 +1,22 @@
 from qiskit.transpiler import Target, InstructionProperties, CouplingMap
 from qiskit.circuit import QuantumCircuit
 from qiskit import transpile
-import qiskit.circuit.library as Gates
+#import qiskit.circuit.library as Gates
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers import QubitProperties
 from qiskit_ibm_runtime import QiskitRuntimeService
 
-from itertools import islice
+#from itertools import islice
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
-import seaborn as sns
+#import seaborn as sns
 import networkx as nx
-from rustworkx import EdgeList
-from networkx.algorithms import bipartite
+#from rustworkx import EdgeList
+#from networkx.algorithms import bipartite
 import numpy as np
 import pickle
-import sys
+#import sys
 
 from plotting import utils
 
@@ -24,9 +24,11 @@ from plotting import utils
 def defaultGateSet():
     return ["id", "sx", "x", "rz", "rzz", "cz", "rx"]
 
+def defaultResolutionTime():
+    return 2.2e-10
+
 def GuadalupeCouplingMap():
     return CouplingMap([[0, 1], [1, 4], [4, 7], [6, 7], [7, 10], [10, 12], [12, 15], [1, 2], [2, 3], [3, 5], [5, 8], [8, 11], [11, 14], [12, 13], [13, 14], [8,9]])
-
 
 def getRealNoiseModelsFromEagle():
     service = QiskitRuntimeService(instance="ibm-q/open/main")
@@ -34,6 +36,12 @@ def getRealNoiseModelsFromEagle():
     qubit_properties = [backend.qubit_properties(i) for i in range(backend.num_qubits)]
 
     return qubit_properties, backend.target
+
+def getRealResolutionTimeFromEagle():
+    service = QiskitRuntimeService(instance="ibm-q/open/main")
+    backend = service.backend("ibm_kyiv")
+
+    return backend.dt
 
 def heavyHexEagleCouplingMap():
     service = QiskitRuntimeService(instance="ibm-q/open/main")
@@ -109,11 +117,12 @@ def printCouplingMap(coupling_map: CouplingMap, layers: dict):
 
 class customBackend(GenericBackendV2):    
     
-    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None, remote_gates: list[tuple] = []):
+    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), dt: float = defaultResolutionTime(),basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None, remote_gates: list[tuple] = []):
         assert num_qubits == coupling_map.size()
         super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, seed=1)
         self.name = name
         self.remote_gates = remote_gates
+        self.dt = dt
 
         if noise_model == None:
             self.addStateOfTheArtNoise()
@@ -289,9 +298,9 @@ def test(backend: str = "FezDQC"):
 
     print(qc_t)
 
-generateBackends(constructDQCSmall)
-generateBackends(constructDQCMedium)
-generateBackends(constructDQCLarge)
+#generateBackends(constructDQCSmall)
+#generateBackends(constructDQCMedium)
+#generateBackends(constructDQCLarge)
 
 #b = loadBackend("backends/GuadalupeDQC_0.015")
 #b2 = loadBackend("backends/KyivDQC_0.015")

@@ -1,6 +1,6 @@
 import os
 #import qiskit
-import sys
+#import sys
 import re
 
 valid_benchmark_suites = ["MQTBench", "QASMBench", "Supermarq", "QOSLib"]
@@ -22,7 +22,7 @@ def collect_files(base_dir, level1, level2, nqbits: tuple[int, int], additional_
     files = []
     level1_path = os.path.join(base_dir, level1)
 
-    if os.path.exists(level1_path + "/" + level2):
+    if os.path.exists(os.path.join(level1_path, level2)):
         level2_path = os.path.join(level1_path, level2)
     else:
         return []
@@ -56,17 +56,17 @@ def load_qasm_files(benchname: str, nqbits: tuple[int, int] = (2, 1000), benchma
             raise ValueError("Benchmark suite names must be string and valid")
 
     files_to_return = []
+
     for benchmark_suite in benchmark_suites:
-        files_to_return = files_to_return + collect_files(".", benchmark_suite, benchname, nqbits, optional_args)
+        files_to_return = files_to_return + collect_files("benchmarks", benchmark_suite, benchname, nqbits, optional_args)
 
-    print(files_to_return)
+    return files_to_return
 
-#def get_all_benchmarks()
 
-benchname = sys.argv[1]
-lower_limit = int(sys.argv[2])
-upper_limit = int(sys.argv[3])
-benchmark_suites = ["MQTBench", "QASMBench", "QOSLib", "Supermarq"]
-optional = sys.argv[4:]
+#benchname = sys.argv[1]
+#lower_limit = int(sys.argv[2])
+#upper_limit = int(sys.argv[3])
+#benchmark_suites = ["MQTBench", "QASMBench", "QOSLib", "Supermarq"]
+#optional = sys.argv[4:]
 
-load_qasm_files(benchname, (lower_limit, upper_limit), benchmark_suites, optional)
+#load_qasm_files(benchname, (lower_limit, upper_limit), benchmark_suites, optional)
