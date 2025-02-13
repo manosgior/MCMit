@@ -1,6 +1,6 @@
 from qiskit.circuit import QuantumCircuit
 #from qiskit.compiler import transpile
-#from qiskit.quantum_info import hellinger_fidelity
+from qiskit.quantum_info import hellinger_fidelity
 from qiskit.converters import circuit_to_dag
 from qiskit.providers.fake_provider import GenericBackendV2
 
@@ -82,6 +82,9 @@ def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: Generi
 
 def calculateFidelity(circuit: QuantumCircuit, backend: GenericBackendV2, nshots: int = 8192, onlyIdling: bool = False):
     return  calculateExpectedSuccessProbability(circuit, backend, onlyIdling) * nshots
+
+def fidelity(probDist0: dict[str, int], probDist1: dict[str, int]):
+    return hellinger_fidelity(probDist0, probDist1)
 
 def getEstimateShots(circuit: QuantumCircuit, backend: GenericBackendV2, desired_fidelity: float, onlyIdling: bool = False):
     fid = calculateFidelity(circuit=circuit, backend=backend, onlyIdling=onlyIdling)

@@ -43,6 +43,12 @@ def getRealResolutionTimeFromEagle():
 
     return backend.dt
 
+def getRealEagleBackend():
+    service = QiskitRuntimeService(instance="ibm-q/open/main")
+    backend = service.backend("ibm_kyiv")
+
+    return backend
+
 def heavyHexEagleCouplingMap():
     service = QiskitRuntimeService(instance="ibm-q/open/main")
     backend = service.backend("ibm_kyiv")
@@ -133,7 +139,8 @@ class customBackend(GenericBackendV2):
                         self.target.update_instruction_properties(instruction, p[0], p[1])
 
         if qubit_properties == None:
-            self.addStateOfTheArtQubits()
+            #self.addStateOfTheArtQubits()
+            self.sampleFromRealEagleQubits()
         else: 
             self.target.qubit_properties = qubit_properties
 
@@ -177,18 +184,32 @@ class customBackend(GenericBackendV2):
                 self.target.update_instruction_properties(g, e, gate_props)
 
     def addStateOfTheArtQubits(self):
-        qubits = []
+        qubit_props = []
         
         for i in range(self.num_qubits):
-            t1 = np.random.normal(190, 100, 1)
-            t1 = np.clip(t1, 10, 500)
+            t1 = np.random.normal(190, 120, 1)
+            t1 = np.clip(t1, 50, 500)
+            t1 = t1 * 1e-6
 
-            t2 = np.random.normal(130, 100, 1)
-            t2 = np.clip(t2, 10, 650)
+            t2 = np.random.normal(130, 120, 1)
+            t2 = np.clip(t2, 50, 650)
+            t2 = t2 * 1e-6
 
-            qubits.append(QubitProperties(t1=t1, t2=t2, frequency=5.0e9))
+            qubit_props.append(QubitProperties(t1=t1, t2=t2, frequency=5.0e9))
 
-        self.target.qubit_properties = qubits
+        self.target.qubit_properties = qubit_props
+
+    def sampleFromRealEagleQubits(self):
+        qubit_props, noise_model = getRealNoiseModelsFromEagle()
+        own_qubit_props = []
+        if self.num_qubits <= len(qubit_props):
+            for i in range(self.num_qubits):
+                own_qubit_props.append(qubit_props[i])
+        else:
+            for i in range(self.num_qubits):
+                own_qubit_props.append(qubit_props[np.randint(0, len(qubit_props))])
+
+        self.target.qubit_properties = own_qubit_props
 
     def distance(self, q0: int, q1: int):
         return self.coupling_map.distance(q0, q1)
@@ -281,7 +302,7 @@ def constructDQCLarge(noise: float = 0.03):
 def generateBackends(backend_generator, noise: list[float] = [0.015, 0.03, 0.05]):
     for n in noise:
         backend = backend_generator(n)
-        saveBackend(backend, "backends/QPUs" + backend.name + str(n))
+        saveBackend(backend, "backends/QPUs/" + backend.name + str(n))
 
 
 def test(backend: str = "FezDQC"):
