@@ -24,6 +24,9 @@ from plotting import utils
 def defaultGateSet():
     return ["id", "sx", "x", "rz", "rzz", "cz", "rx"]
 
+def cliffordGateSet():
+    return ["h", "cx", "s"]
+
 def defaultResolutionTime():
     return 2.2222222222222221e-10 * 1e9
 
@@ -118,8 +121,7 @@ def printCouplingMap(coupling_map: CouplingMap, layers: dict):
     pos = nx.multipartite_layout(G, subset_key=layers, align='horizontal')
 
     nx.draw(G, with_labels=True, node_color="skyblue", edge_color="gray", pos=pos)
-    plt.savefig("coupling_map.png", dpi=300, bbox_inches="tight")
-
+    plt.savefig("backends/visualization/coupling_map.png", dpi=300, bbox_inches="tight")
 
 class customBackend(GenericBackendV2):    
     
@@ -165,23 +167,26 @@ class customBackend(GenericBackendV2):
         #print("--------------------")
         #print(np.median(values))
 
-    def addStateOfTheArtNoise(self): 
+    def addStateOfTheArtNoise(self):
+        gate_set = self._basis_gates
 
-        for g in ["id", "sx", "x", "rz", "rx"]:
-            self.updateGateProps(gate=g, duration=50, error_med=0.00025, error_min=0.0001, error_max=0.015)
+        for g in gate_set:
+            if g in ["id", "sx", "x", "rz", "rx", "h"]:
+                self.updateGateProps(gate=g, duration=50, error_med=0.00025, error_min=0.0001, error_max=0.015)
+            elif g in ["cz", "rzz", "cx"]:
+                self.updateGateProps(gate=g, duration=70, error_med=0.002, error_min=0.0009, error_max=0.06)
+            elif g == "measure":
+                self.updateGateProps(gate=g, duration=70, error_med=0.01, error_min=0.002, error_max=0.5)
 
-        for g in ["cz", "rzz"]:
-            self.updateGateProps(gate=g, duration=70, error_med=0.002, error_min=0.0009, error_max=0.06)
-
-        self.updateGateProps(gate="measure", duration=70, error_med=0.01, error_min=0.002, error_max=0.5)
-
-    def addNoiseDelayToRemoteGates(self, endpoints: list[tuple], duration: int = 300, error: float = 0.03, gates: list[str] = ["cz", "rzz"]):
+    def addNoiseDelayToRemoteGates(self, endpoints: list[tuple], duration: int = 300, error: float = 0.03, gates: list[str] = ["cz", "rzz", "cx"]):
         roundedDuration = round((duration * 1e-9) / self.dt) * self.dt
         gate_props = InstructionProperties(roundedDuration, error)
+        basis_gates = self._basis_gates
         
         for g in gates:
-            for e in endpoints:
-                self.target.update_instruction_properties(g, e, gate_props)
+            if g in basis_gates:
+                for e in endpoints:
+                    self.target.update_instruction_properties(g, e, gate_props)
 
     def addStateOfTheArtQubits(self):
         qubit_props = []
@@ -262,7 +267,7 @@ class customBackend(GenericBackendV2):
 
         axes[0].set_ylabel("Cumulative Probability")
         plt.tight_layout()
-        plt.savefig("backends/" + self.name + "_gate_probs.png")
+        plt.savefig("backends/visualization/" + self.name + "_gate_probs.png")
 
 def saveBackend(backend: customBackend, filename: str):
     with open(filename, "wb") as f:
