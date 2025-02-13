@@ -281,7 +281,7 @@ def constructDQCLarge(noise: float = 0.03):
 def generateBackends(backend_generator, noise: list[float] = [0.015, 0.03, 0.05]):
     for n in noise:
         backend = backend_generator(n)
-        saveBackend(backend, "backends/" + backend.name + str(n))
+        saveBackend(backend, "backends/QPUs" + backend.name + str(n))
 
 
 def test(backend: str = "FezDQC"):

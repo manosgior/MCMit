@@ -56,6 +56,9 @@ def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: Generi
             qp = backend.qubit_properties(qubit)
             fidelity *= 1-idleError(time, qp.t1, qp.t1)
 
+    #print(delays)
+    #print(active_times)
+
     #for wire in dag.wires:
        # duration = 0.0
        # for gate in dag.nodes_on_wire(wire, only_ops=True):

@@ -1,15 +1,16 @@
 from benchmarks.load_benchmarks import load_qasm_files
 from analysis.fidelity import calculateExpectedSuccessProbability
 from analysis.properties import getSize
-from backends.Backend import loadBackend
+from backends.backend import loadBackend
 
-from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
 
 def testing():
-    benchmarks = load_qasm_files(benchname="ghz", nqbits=(15, 30), benchmark_suites=["Supermarq"])
-    backend = loadBackend("backends/GuadalupeDQC_0.015")
+    benchmarks = load_qasm_files(benchname="qaoa", nqbits=(15, 30), benchmark_suites=["QOSLib"], optional_args=["MaxCut", "regural", "qaoa_r4"])
+    print(benchmarks)
+    assert(len(benchmarks))
+    backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
 
     circuits = [QuantumCircuit.from_qasm_file(b) for b in benchmarks]
     circuits = sorted(circuits, key=getSize)
