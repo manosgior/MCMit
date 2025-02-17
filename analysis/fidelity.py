@@ -83,6 +83,23 @@ def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: Generi
 def calculateFidelity(circuit: QuantumCircuit, backend: GenericBackendV2, nshots: int = 8192, onlyIdling: bool = False):
     return  calculateExpectedSuccessProbability(circuit, backend, onlyIdling) * nshots
 
+def convertCountsToProbs(counts: dict[str, int], shots: int = 0):
+    if shots == 0:
+        shots = sum(counts.values()) 
+    probs = {k: v/shots for k, v in counts.items()}
+
+    return probs
+
+def calculateExpectationValue(counts: dict[str, int], shots: int = 0):
+    probs = convertCountsToProbs(counts, shots)
+
+    expectation = 0
+    for bitstring, prob in probs.items():
+        z_value = sum(1 if b == '0' else -1 for b in bitstring)
+        expectation += prob * z_value
+
+    return expectation
+
 def fidelity(probDist0: dict[str, int], probDist1: dict[str, int]):
     return hellinger_fidelity(probDist0, probDist1)
 

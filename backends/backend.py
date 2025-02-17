@@ -30,6 +30,15 @@ def cliffordGateSet():
 def defaultResolutionTime():
     return 2.2222222222222221e-10 * 1e9
 
+def defaultConfusionMatrix():
+    p0 = 0.00391
+    p1 = 0.01221
+
+    return  np.array([
+        1-p0, p1,
+        p0, 1-p1
+    ]).reshape(2,2)
+
 def GuadalupeCouplingMap():
     return CouplingMap([[0, 1], [1, 4], [4, 7], [6, 7], [7, 10], [10, 12], [12, 15], [1, 2], [2, 3], [3, 5], [5, 8], [8, 11], [11, 14], [12, 13], [13, 14], [8,9]])
 
@@ -131,6 +140,7 @@ class customBackend(GenericBackendV2):
         super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, dtm=dt, seed=1)
         self.name = name
         self.remote_gates = remote_gates
+        self.confusion_matrix = defaultConfusionMatrix()
 
         if noise_model == None:
             self.addStateOfTheArtNoise()
@@ -212,7 +222,7 @@ class customBackend(GenericBackendV2):
                 own_qubit_props.append(qubit_props[i])
         else:
             for i in range(self.num_qubits):
-                own_qubit_props.append(qubit_props[np.randint(0, len(qubit_props))])
+                own_qubit_props.append(qubit_props[np.random.randint(0, len(qubit_props))])
 
         self.target.qubit_properties = own_qubit_props
 

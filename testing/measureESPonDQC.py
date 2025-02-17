@@ -1,5 +1,5 @@
 from benchmarks.load_benchmarks import load_qasm_files
-from analysis.fidelity import calculateExpectedSuccessProbability, fidelity
+from analysis.fidelity import calculateExpectedSuccessProbability, fidelity, calculateExpectationValue
 from analysis.properties import getSize
 from backends.backend import loadBackend, getRealEagleBackend
 from backends.simulator import simulatorFromBackend
@@ -10,7 +10,6 @@ from qiskit_aer import AerSimulator
 
 from mitiq import Calibrator
 from mitiq import MeasurementResult
-from mitiq import MeasurementResult
 
 def executor(circuit: QuantumCircuit):
     #backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
@@ -19,7 +18,7 @@ def executor(circuit: QuantumCircuit):
     tqc = transpile(circuit, backend, scheduling_method="alap")
     counts = simulator.run(tqc, shots=10000).result().get_counts()
 
-    return MeasurementResult(counts.keys())
+    return MeasurementResult.from_counts(counts)
 
 
 def findMitigationStrategy():
