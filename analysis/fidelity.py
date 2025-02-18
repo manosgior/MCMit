@@ -90,15 +90,46 @@ def convertCountsToProbs(counts: dict[str, int], shots: int = 0):
 
     return probs
 
-def calculateExpectationValue(counts: dict[str, int], shots: int = 0):
-    probs = convertCountsToProbs(counts, shots)
 
-    expectation = 0
-    for bitstring, prob in probs.items():
-        z_value = sum(1 if b == '0' else -1 for b in bitstring)
-        expectation += prob * z_value
+def getEigenValue(bitstring: str, mode: str):
+    assert mode in ["sum", "product", "parity"]
 
-    return expectation
+    if mode == "product":
+        return np.prod([1 if bit == '0' else -1 for bit in bitstring])
+    elif mode == "sum" :
+        return sum(1 if b == '0' else -1 for b in bitstring)
+    elif mode == "parity":
+        return bitstring.count('1') % 2
+
+def calculateExpectationValue(counts: dict[str, int], shots: int = 0, mode: str = "sum"):
+    ev = 0
+    shots = sum(counts.values())
+
+    for bitstring, count in counts.items():
+        if mode == "product":
+            eigenvalue = getEigenValue(bitstring, "product")
+            ev += count * eigenvalue
+        elif mode == "sum" :
+            prob = count / shots
+            eigenvalue = getEigenValue(bitstring, "sum")
+            ev += prob * eigenvalue
+        elif mode == "parity":
+            parity = getEigenValue(bitstring, "parity")
+            ev += (1 if parity == 0 else -1) * count
+
+    if mode is sum:
+        return ev
+    else:
+        return ev / shots
+
+def getEVFidelity(ev_ideal: float, ev_noisy: float):
+    if ev_ideal != 0:
+        return (abs(ev_ideal - ev_noisy) / ev_ideal)
+    else:
+        return abs(ev_ideal - ev_noisy)
+
+def getARG(ev_ideal: float, ev_noisy: float):
+    return 100 * getEVFidelity(ev_ideal, ev_noisy)
 
 def fidelity(probDist0: dict[str, int], probDist1: dict[str, int]):
     return hellinger_fidelity(probDist0, probDist1)
