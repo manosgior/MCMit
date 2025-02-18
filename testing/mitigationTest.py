@@ -12,6 +12,7 @@ from mitiq.zne.inference import RichardsonFactory
 from mitiq.zne import combine_results, scaled_circuits
 from mitiq.rem import generate_inverse_confusion_matrix, generate_tensored_inverse_confusion_matrix
 from mitiq import rem
+from mitiq.raw import execute
 
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
@@ -20,15 +21,15 @@ from qiskit_aer import AerSimulator
 
 import numpy as np
 
-def executor(circuit: QuantumCircuit, expVaue: bool = True):
+def executor(circuit: QuantumCircuit, expValue: bool = True):
     backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
     #backend = getRealEagleBackend()
     simulator = simulatorFromBackend(backend)
     tqc = transpile(circuit, backend, scheduling_method="alap")
     counts = simulator.run(tqc, shots=10000).result().get_counts()
 
-    if expVaue:
-        return calculateExpectationValue(counts, 10000)
+    if expValue:
+        return calculateExpectationValue(counts, 10000, mode = "parity")
     else:
         return counts
 
@@ -56,16 +57,16 @@ def testDDD():
         miti_evs = []
 
         for i in range(5):
-            noisy_results = executor(c, False)
-            noisy_expectation_value = calculateExpectationValue(noisy_results, mode="parity")
-            fids.append(fidelity(noisy_results, perfect_results))
-            evs.append(getEVFidelity(noisy_expectation_value, perfect_expectation_value)) 
+            noisy_results = execute(circuit=c, executor=executor)
+            #noisy_expectation_value = calculateExpectationValue(noisy_results, mode="parity")
+            #fids.append(fidelity(noisy_results, perfect_results))
+            evs.append(getEVFidelity(noisy_results, perfect_expectation_value)) 
             mitigated_result = zne.execute_with_zne(circuit=c, executor=executor)
             miti_evs.append(getEVFidelity(mitigated_result, perfect_expectation_value)) 
         
-        print(fids)
-        print(evs)
-        print(miti_evs)
+        #print(fids)
+        print(evs, np.mean(evs))
+        print(miti_evs, np.mean(miti_evs))
         #rule = ddd.rules.yy
         #dd_result = ddd.execute_with_ddd(circuit=circuits[0], executor=executor, rule=rule)
         #print(backend.confusion_matrix)
