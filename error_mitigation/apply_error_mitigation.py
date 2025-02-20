@@ -1,4 +1,4 @@
-from backends.backend import loadBackend, getRealEagleBackend
+from backends.backend import loadBackend, getRealEagleBackend, customBackend
 from backends.simulator import simulatorFromBackend
 from analysis.fidelity import calculateExpectationValue
 
@@ -19,6 +19,7 @@ from qiskit.circuit import QuantumCircuit
 from qiskit_ibm_runtime import EstimatorV2 as Estimator
 
 import numpy as np
+from typing import Union
 
 def executor(circuit: QuantumCircuit, mode: str = "parity") -> float:
     backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
@@ -28,6 +29,18 @@ def executor(circuit: QuantumCircuit, mode: str = "parity") -> float:
     counts = simulator.run(tqc, shots=10000).result().get_counts()
 
     return calculateExpectationValue(counts, 10000, mode)
+
+def getEstimatorFromBackend(backend: customBackend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")):
+    return Estimator(mode=backend)
+
+def estimator(circuit: QuantumCircuit, estimator: Estimator) -> float:
+    backend = estimator.backend()
+    tqc = transpile(circuit, backend)
+    estimator = estimator
+
+    counts = estimator.run(tqc, shots = 10000).result().get_counts()
+
+    return calculateExpectationValue(counts, shots=10000)
 
 def getDDDrule(type: str = "xx"):
     assert type in ["xx", "yy", "xyxy"]
@@ -43,21 +56,12 @@ def applyDDD(circuit: QuantumCircuit, rule: ddd.rules, mode: str = "parity") -> 
     return mitigated_result
 
 def getDDQiskitSequences():
-    return ["XX", "XpXm", "XY$"]
+    return ["XX", "XpXm", "XY4"]
 
-def applyDDQiskit(circuit: QuantumCircuit, sequence: str = "XX"):
-    backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
-    tqc = transpile(circuit, backend)
-    estimator = Estimator(mode=backend)
-
+def applyDDQiskit(estimator: Estimator, sequence: str = "XX"):
     estimator.options.dynamical_decoupling.enable = True
     estimator.options.dynamical_decoupling.sequence_type = sequence
     estimator.options.dynamical_decoupling.scheduling_method = "alap"
-
-    counts = estimator.run(tqc, shots = 10000).result().get_counts()
-
-    return calculateExpectationValue(counts, shots=10000)
-
 
 def getZNEScaleFactors(low: float = 1.0, high: float = 9.0):
     return list(range(low, high, 2))
@@ -79,7 +83,7 @@ def getZNEFoldingMethods():
     return [fold_gates_at_random, fold_global, fold_all]
 
 
-def applyZNE(circuit: QuantumCircuit, scale_factors: list[float], scale_method, factory, mode: str = "parity"):
+def applyZNE(circuit: QuantumCircuit, scale_factors: list[float] = getZNEScaleFactors(), scale_method = fold_gates_at_random, factory = inference.RichardsonFactory, mode: str = "parity"):
     folded_circuits = scaled_circuits(
         circuit=circuit,
         scale_factors=scale_factors,
@@ -96,13 +100,21 @@ def applyZNE(circuit: QuantumCircuit, scale_factors: list[float], scale_method, 
     return two_stage_zne_result
     #zne.execute_with_zne(circuit=circuit, executor=executor)
 
+def getZNEQiskitExtrapolationMethods():
+    return ['linear', 'exponential', 'double_exponential', 'polynomial_degree_1', 'polynomial_degree_2', 'polynomial_degree_3', 'polynomial_degree_4', 'polynomial_degree_5', 'polynomial_degree_6', 'polynomial_degree_7', 'fallback']
+
+def applyZNEQiskit(estimator: Estimator, noise_factors: list[float] = getZNEScaleFactors(), factory: str = "linear"):
+    estimator.options.resilience.zne_mitigation = True
+    estimator.options.resilience.zne.noise_factors = noise_factors
+    estimator.options.resilience.zne.extrapolator = factory
+
 def getLREdegrees(low: int = 1, high: int = 4):
     return list(range(low, high))
 
 def getLREfoldMultipliers(low: int = 1, high: int = 4):
     return list(range(low, high))
 
-def applyLRE(circuit: QuantumCircuit, degree: int, fold_multiplier: int, mode: str = "parity"):
+def applyLRE(circuit: QuantumCircuit, degree: int = 2, fold_multiplier: int = 2, mode: str = "parity"):
     mitigated_result = execute_with_lre(
         circuit,
         executor,
@@ -112,7 +124,7 @@ def applyLRE(circuit: QuantumCircuit, degree: int, fold_multiplier: int, mode: s
 
     return mitigated_result
 
-def applyPauliTwirling(circuit: QuantumCircuit, num_variants: int, mode: str = "parity"):
+def applyPauliTwirling(circuit: QuantumCircuit, num_variants: int = 10, mode: str = "parity"):
     twirled_circuits = generate_pauli_twirl_variants(circuit, num_circuits=num_variants)
     results = [executor(circuit) for circuit in twirled_circuits]
 
@@ -121,28 +133,46 @@ def applyPauliTwirling(circuit: QuantumCircuit, num_variants: int, mode: str = "
     return mitigated_result
 
 
-def applyPauliTwirlingQiskit(circuit: QuantumCircuit, num_randomizations: int, shots_per_randomization: int):
-    backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
-    tqc = transpile(circuit, backend)
-    estimator = Estimator(mode=backend)
-
+def applyPauliTwirlingQiskit(estimator: Estimator, num_randomizations: int = 32, shots_per_randomization: int = 100):
     estimator.options.twirling.enable_gates = True
     estimator.options.twirling.num_randomizations = num_randomizations
     estimator.options.twirling.shots_per_randomization = shots_per_randomization
 
-    counts = estimator.run(tqc, shots = 10000).result().get_counts()
-
-    return calculateExpectationValue(counts, shots=10000)
-
-def applyMeasureMitigationQiskit(circuit: QuantumCircuit, num_randomizations: int, shots_per_randomization: int):
-    backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
-    tqc = transpile(circuit, backend)
-    estimator = Estimator(mode=backend)
-
+def applyMeasureMitigationQiskit(estimator: Estimator, num_random: int = 32, shots_per_random: int = 100):
     estimator.options.resilience.measure_mitigation = True
-    estimator.options.resilience.measure_noise_learning.num_randomizations = num_randomizations
-    estimator.options.resilience.measure_noise_learning.shots_per_randomization = shots_per_randomization
+    estimator.options.resilience.measure_noise_learning.num_randomizations = num_random
+    estimator.options.resilience.measure_noise_learning.shots_per_randomization = shots_per_random
 
-    counts = estimator.run(tqc, shots = 10000).result().get_counts()
+def applyPECQiskit(estimator: Estimator, max_overhead: int = 100):
+    estimator.options.resilience.pec_mitigation = True
+    estimator.options.resilience.pec.max_overhead = max_overhead
 
-    return calculateExpectationValue(counts, shots=10000)
+def validEMOptions():
+    return {
+        "DD" : applyDDQiskit,
+        "ZNE" : applyZNEQiskit,
+        "pauli_twirling": applyPauliTwirlingQiskit,
+        "measure_mitigation": applyMeasureMitigationQiskit,
+        "PEC": applyPECQiskit,
+    }
+
+def applyErrorMitigationQiskit(circuit: QuantumCircuit, em_techniques: list[str] = validEMOptions().keys(), **kwargs):
+    estimator = getEstimatorFromBackend()
+    valid_em_techniques = validEMOptions()
+
+    for em in em_techniques:
+        if em not in valid_em_techniques:
+            raise ValueError(f"Unknown technique: {em}")
+
+        if em == "DD":
+            valid_em_techniques[em](estimator, kwargs["sequence"])
+        elif em == "ZNE":
+            valid_em_techniques[em](estimator, kwargs["noise_factors"], kwargs["factory"])
+        elif em == "pauli_twirling":
+            valid_em_techniques[em](estimator, kwargs["num_randomizations"], kwargs["shots_per_randomization"])
+        elif em == "measure_mitigation":
+            valid_em_techniques[em](estimator, kwargs["num_randomi"], kwargs["shots_per_random"])
+        elif em == "PEC":
+            valid_em_techniques[em](estimator, kwargs["max_overhead"])            
+
+    return estimator(circuit, estimator)
