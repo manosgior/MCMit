@@ -13,6 +13,7 @@ from mitiq.zne import combine_results, scaled_circuits
 from mitiq.rem import generate_inverse_confusion_matrix, generate_tensored_inverse_confusion_matrix
 from mitiq import rem
 from mitiq.raw import execute
+from mitiq.lre import execute_with_lre
 
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
@@ -42,7 +43,7 @@ def getAllExpectationValues(counts: dict[str, int]):
     return to_return
 
 def testDDD():
-    benchmarks = load_qasm_files(benchname="ghz", nqbits=(8, 16), benchmark_suites=["QOSLib"], optional_args=[]) # "MaxCut", "regural", "qaoa_r4"
+    benchmarks = load_qasm_files(benchname="ghz", nqbits=(8, 15), benchmark_suites=["QOSLib"], optional_args=[]) # "MaxCut", "regural", "qaoa_r4"
     backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
     assert(len(benchmarks))
 
@@ -55,15 +56,22 @@ def testDDD():
         fids = []
         evs = []
         miti_evs = []
+        degree = [2, 3]
+        fold_multiplier = [2, 3]
 
         for i in range(5):
             noisy_results = execute(circuit=c, executor=executor)
             #noisy_expectation_value = calculateExpectationValue(noisy_results, mode="parity")
             #fids.append(fidelity(noisy_results, perfect_results))
-            evs.append(getEVFidelity(noisy_results, perfect_expectation_value)) 
-            mitigated_result = zne.execute_with_zne(circuit=c, executor=executor)
-            miti_evs.append(getEVFidelity(mitigated_result, perfect_expectation_value)) 
-        
+            evs.append(getEVFidelity(noisy_results, perfect_expectation_value))
+
+            #for d in degree:
+                #for fm in fold_multiplier:
+                #mitigated_result = zne.execute_with_zne(circuit=c, executor=executor)
+                #miti_evs.append(getEVFidelity(mitigated_result, perfect_expectation_value)) 
+            mitigated_result = execute_with_lre(c, executor, degree=2, fold_multiplier=3)
+            miti_evs.append(getEVFidelity(mitigated_result, perfect_expectation_value))
+
         #print(fids)
         print(evs, np.mean(evs))
         print(miti_evs, np.mean(miti_evs))
