@@ -4,6 +4,8 @@ from analysis.properties import getSize
 from backends.backend import loadBackend, getRealEagleBackend
 from backends.simulator import simulatorFromBackend
 
+from error_mitigation.apply_error_mitigation import *
+
 from mitiq import MeasurementResult
 from mitiq import ddd
 from mitiq import zne
@@ -22,17 +24,16 @@ from qiskit_aer import AerSimulator
 
 import numpy as np
 
-def executor(circuit: QuantumCircuit, expValue: bool = True):
+def executor(circuit: QuantumCircuit):
     backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
     #backend = getRealEagleBackend()
     simulator = simulatorFromBackend(backend)
-    tqc = transpile(circuit, backend, scheduling_method="alap")
+    tqc = transpile(circuit, backend)
     counts = simulator.run(tqc, shots=10000).result().get_counts()
 
-    if expValue:
-        return calculateExpectationValue(counts, 10000, mode = "parity")
-    else:
-        return counts
+
+    return calculateExpectationValue(counts, 10000, mode = "parity")
+
 
 def getAllExpectationValues(counts: dict[str, int]):
     to_return = {}
@@ -106,8 +107,28 @@ def testDDD():
     #print(two_stage_zne_result)
    #print(abs(two_stage_zne_result -  perfect_expectation_value))
 
-   
+def cleanTest():
+    benchmarks = load_qasm_files(benchname="ghz", nqbits=(8, 15), benchmark_suites=["QOSLib"], optional_args=[]) # "MaxCut", "regural", "qaoa_r4"
+
+    circuits = [QuantumCircuit.from_qasm_file(b) for b in benchmarks]
+    circuits = sorted(circuits, key=getSize)
+
+    for c in circuits:
+        perfect_results = {'0' * c.num_qubits : 5000, '1' * c.num_qubits : 5000}
+        perfect_expectation_value = calculateExpectationValue(perfect_results, mode="parity")
+        evs = []
+        miti_evs = []
+
+        for i in range(5):
+            noisy_results = execute(circuit=c, executor=executor)
+            evs.append(getEVFidelity(noisy_results, perfect_expectation_value))
+
+            mitigated_result = applyErrorMitigationQiskit(circuit=c, em_techniques=["DD"])
+            miti_evs.append(getEVFidelity(mitigated_result, perfect_expectation_value))
+        
+        print(evs, np.mean(evs))
+        print(miti_evs, np.mean(miti_evs))
 
 
-testDDD()
+cleanTest()
 

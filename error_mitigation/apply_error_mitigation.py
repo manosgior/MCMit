@@ -15,8 +15,10 @@ from mitiq.lre import execute_with_lre
 from mitiq.pt import generate_pauli_twirl_variants
 
 from qiskit import transpile
+from qiskit.quantum_info import SparsePauliOp
 from qiskit.circuit import QuantumCircuit
 from qiskit_ibm_runtime import EstimatorV2 as Estimator
+from qiskit_ibm_runtime.options import estimator_options
 
 import numpy as np
 from typing import Union
@@ -31,16 +33,17 @@ def executor(circuit: QuantumCircuit, mode: str = "parity") -> float:
     return calculateExpectationValue(counts, 10000, mode)
 
 def getEstimatorFromBackend(backend: customBackend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")):
-    return Estimator(mode=backend)
+    return Estimator(mode=backend, options={"default_shots": 10000})
 
-def estimator(circuit: QuantumCircuit, estimator: Estimator) -> float:
+def estimatorExecutor(circuit: QuantumCircuit, estimator: Estimator) -> float:
     backend = estimator.backend()
     tqc = transpile(circuit, backend)
     estimator = estimator
 
-    counts = estimator.run(tqc, shots = 10000).result().get_counts()
+    global_parity_observable = SparsePauliOp("Z" * circuit.num_qubits)
+    result = estimator.run([(tqc, global_parity_observable)]).result()[0]
 
-    return calculateExpectationValue(counts, shots=10000)
+    return result
 
 def getDDDrule(type: str = "xx"):
     assert type in ["xx", "yy", "xyxy"]
@@ -63,7 +66,7 @@ def applyDDQiskit(estimator: Estimator, sequence: str = "XX"):
     estimator.options.dynamical_decoupling.sequence_type = sequence
     estimator.options.dynamical_decoupling.scheduling_method = "alap"
 
-def getZNEScaleFactors(low: float = 1.0, high: float = 9.0):
+def getZNEScaleFactors(low: int = 1, high: int = 9):
     return list(range(low, high, 2))
 
 def validZNEFactories():
@@ -83,7 +86,7 @@ def getZNEFoldingMethods():
     return [fold_gates_at_random, fold_global, fold_all]
 
 
-def applyZNE(circuit: QuantumCircuit, scale_factors: list[float] = getZNEScaleFactors(), scale_method = fold_gates_at_random, factory = inference.RichardsonFactory, mode: str = "parity"):
+def applyZNE(circuit: QuantumCircuit, scale_factors: list[int] = getZNEScaleFactors(), scale_method = fold_gates_at_random, factory = inference.RichardsonFactory, mode: str = "parity"):
     folded_circuits = scaled_circuits(
         circuit=circuit,
         scale_factors=scale_factors,
@@ -156,7 +159,7 @@ def validEMOptions():
         "PEC": applyPECQiskit,
     }
 
-def applyErrorMitigationQiskit(circuit: QuantumCircuit, em_techniques: list[str] = validEMOptions().keys(), **kwargs):
+def applyErrorMitigationQiskit(circuit: QuantumCircuit, em_techniques: list[str] = ["DD", "ZNE", "pauli_twirling", "measure_mitigation"], **kwargs):
     estimator = getEstimatorFromBackend()
     valid_em_techniques = validEMOptions()
 
@@ -165,14 +168,32 @@ def applyErrorMitigationQiskit(circuit: QuantumCircuit, em_techniques: list[str]
             raise ValueError(f"Unknown technique: {em}")
 
         if em == "DD":
-            valid_em_techniques[em](estimator, kwargs["sequence"])
+            if kwargs.get("sequence") == None:
+                valid_em_techniques[em](estimator)
+            else:
+                valid_em_techniques[em](estimator, kwargs.get("sequence"))
         elif em == "ZNE":
-            valid_em_techniques[em](estimator, kwargs["noise_factors"], kwargs["factory"])
+            if kwargs.get("noise_factors") == None or kwargs.get("factory") == None:
+                valid_em_techniques[em](estimator)
+            else:
+                valid_em_techniques[em](estimator, kwargs.get("noise_factors"), kwargs.get("factory"))
         elif em == "pauli_twirling":
-            valid_em_techniques[em](estimator, kwargs["num_randomizations"], kwargs["shots_per_randomization"])
+            if kwargs.get("num_randomizations") == None or kwargs.get("shots_per_randomization") == None:
+                valid_em_techniques[em](estimator)
+            else:
+                valid_em_techniques[em](estimator, kwargs.get("num_randomizations"), kwargs.get("shots_per_randomization"))
         elif em == "measure_mitigation":
-            valid_em_techniques[em](estimator, kwargs["num_randomi"], kwargs["shots_per_random"])
+            if kwargs.get("num_randomi") == None or kwargs.get("shots_per_random") == None:
+                 valid_em_techniques[em](estimator)
+            else:
+                if kwargs.get("num_random") == None or kwargs.get("shots_per_random") == None:
+                    valid_em_techniques[em](estimator)
+                else:
+                    valid_em_techniques[em](estimator, kwargs.get("num_random"), kwargs.get("shots_per_random"))
         elif em == "PEC":
-            valid_em_techniques[em](estimator, kwargs["max_overhead"])            
+            if kwargs.get("max_overhead") == None:
+                valid_em_techniques[em](estimator)
+            else:
+                valid_em_techniques[em](estimator, kwargs.get("max_overhead"))            
 
-    return estimator(circuit, estimator)
+    return estimatorExecutor(circuit, estimator)
