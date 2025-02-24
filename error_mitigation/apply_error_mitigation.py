@@ -1,6 +1,6 @@
 from backends.backend import loadBackend, getRealEagleBackend, customBackend
 from backends.simulator import simulatorFromBackend
-from analysis.fidelity import calculateExpectationValue
+from analysis.fidelity import calculateExpectationValue, calculateExpectedSuccessProbability
 
 from mitiq import MeasurementResult
 from mitiq import ddd
@@ -35,6 +35,15 @@ def executor(circuit: QuantumCircuit, mode: str = "parity") -> float:
 
     return calculateExpectationValue(counts, 10000, mode)
 
+
+def executorESP(circuit: QuantumCircuit, baseEV: float) -> float:
+    backend = loadBackend("backends/QPUs/Guadalupe")
+    tqc = transpile(circuit, backend)
+
+    esp = calculateExpectedSuccessProbability(circuit=tqc, backend=backend, onlyIdling=True, baseEV=baseEV)
+
+    return esp
+
 def getEstimatorFromBackend(backend: customBackend = loadBackend("backends/QPUs/Guadalupe")):
     return Estimator(mode=backend, options={"default_shots": 10000})
     #return BackendEstimatorV2(backend=backend)
@@ -48,7 +57,7 @@ def estimatorExecutor(circuit: QuantumCircuit, estimator: Estimator) -> float:
     global_parity_observable = SparsePauliOp("Z" * tqc.num_qubits)
     result = estimator.run([(tqc, global_parity_observable)]).result()[0]
 
-    return result
+    return result.data.evs
 
 def getDDDrule(type: str = "xx"):
     assert type in ["xx", "yy", "xyxy"]

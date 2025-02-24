@@ -17,8 +17,8 @@ def idleError(time: float, t1: float, t2: float):
 
     return p_total
 
-def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: GenericBackendV2, onlyIdling: bool = False):
-    fidelity = 1
+def calculateExpectedSuccessProbability(circuit: QuantumCircuit, backend: GenericBackendV2, onlyIdling: bool = False, baseEV: float = 1.0):
+    fidelity = baseEV
     dt = backend.dt
     touched = set()
     active_times = defaultdict(int, {key: 0 for key in range(backend.num_qubits)})
