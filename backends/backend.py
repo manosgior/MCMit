@@ -289,6 +289,12 @@ def loadBackend(filename: str):
 
     return backend
 
+def constructBackendSmall():
+    coupling_map = GuadalupeCouplingMap()
+    backend_small = customBackend(name="GuadalupeDQC_", num_qubits=16, coupling_map=coupling_map)
+
+    return backend_small
+
 def constructDQCSmall(noise: float = 0.03): 
     endpoints, map_small = DQCCouplingMap(GuadalupeCouplingMap(), GuadalupeCouplingMap(), [[13, 2], [15, 0]])
     backend_small = customBackend(name="GuadalupeDQC_", num_qubits=32, coupling_map=map_small, remote_gates=endpoints)
@@ -339,6 +345,8 @@ def test(backend: str = "FezDQC"):
 #generateBackends(constructDQCSmall)
 #generateBackends(constructDQCMedium)
 #generateBackends(constructDQCLarge)
+#b = constructBackendSmall()
+#saveBackend(b, "backends/QPUs/Guadalupe")
 
 #b = loadBackend("backends/GuadalupeDQC_0.015")
 #b2 = loadBackend("backends/KyivDQC_0.015")

@@ -18,13 +18,16 @@ from qiskit import transpile
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.circuit import QuantumCircuit
 from qiskit_ibm_runtime import EstimatorV2 as Estimator
+from qiskit.primitives import BackendEstimatorV2
 from qiskit_ibm_runtime.options import estimator_options
+
+import mapomatic as mm
 
 import numpy as np
 from typing import Union
 
 def executor(circuit: QuantumCircuit, mode: str = "parity") -> float:
-    backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
+    backend = loadBackend("backends/QPUs/Guadalupe")
     #backend = getRealEagleBackend()
     simulator = simulatorFromBackend(backend)
     tqc = transpile(circuit, backend)
@@ -32,15 +35,17 @@ def executor(circuit: QuantumCircuit, mode: str = "parity") -> float:
 
     return calculateExpectationValue(counts, 10000, mode)
 
-def getEstimatorFromBackend(backend: customBackend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")):
+def getEstimatorFromBackend(backend: customBackend = loadBackend("backends/QPUs/Guadalupe")):
     return Estimator(mode=backend, options={"default_shots": 10000})
+    #return BackendEstimatorV2(backend=backend)
 
 def estimatorExecutor(circuit: QuantumCircuit, estimator: Estimator) -> float:
     backend = estimator.backend()
     tqc = transpile(circuit, backend)
+
     estimator = estimator
 
-    global_parity_observable = SparsePauliOp("Z" * circuit.num_qubits)
+    global_parity_observable = SparsePauliOp("Z" * tqc.num_qubits)
     result = estimator.run([(tqc, global_parity_observable)]).result()[0]
 
     return result
@@ -140,6 +145,19 @@ def applyPauliTwirlingQiskit(estimator: Estimator, num_randomizations: int = 32,
     estimator.options.twirling.enable_gates = True
     estimator.options.twirling.num_randomizations = num_randomizations
     estimator.options.twirling.shots_per_randomization = shots_per_randomization
+
+def applyReadoutErrorMitigation(circuit: QuantumCircuit, backend: customBackend):
+    confusion_matrix = backend.confusion_matrix
+
+    inverse_confusion_matrix = generate_inverse_confusion_matrix(backend.num_qubits, confusion_matrix[1][0], confusion_matrix[0][1])
+
+    mitigated_result = rem.execute_with_rem(
+        circuit,
+        executor,
+        inverse_confusion_matrix=inverse_confusion_matrix,
+    )
+
+    return mitigated_result
 
 def applyMeasureMitigationQiskit(estimator: Estimator, num_random: int = 32, shots_per_random: int = 100):
     estimator.options.resilience.measure_mitigation = True

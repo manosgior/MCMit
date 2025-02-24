@@ -45,7 +45,7 @@ def getAllExpectationValues(counts: dict[str, int]):
 
 def testDDD():
     benchmarks = load_qasm_files(benchname="ghz", nqbits=(8, 15), benchmark_suites=["QOSLib"], optional_args=[]) # "MaxCut", "regural", "qaoa_r4"
-    backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
+    backend = loadBackend("backends/QPUs/Guadalupe")
     assert(len(benchmarks))
 
     circuits = [QuantumCircuit.from_qasm_file(b) for b in benchmarks]
@@ -66,19 +66,12 @@ def testDDD():
             #fids.append(fidelity(noisy_results, perfect_results))
             evs.append(getEVFidelity(noisy_results, perfect_expectation_value))
 
-            #for d in degree:
-                #for fm in fold_multiplier:
-                #mitigated_result = zne.execute_with_zne(circuit=c, executor=executor)
-                #miti_evs.append(getEVFidelity(mitigated_result, perfect_expectation_value)) 
-            mitigated_result = execute_with_lre(c, executor, degree=2, fold_multiplier=3)
+            mitigated_result = applyReadoutErrorMitigation(c, backend)
             miti_evs.append(getEVFidelity(mitigated_result, perfect_expectation_value))
 
-        #print(fids)
+
         print(evs, np.mean(evs))
         print(miti_evs, np.mean(miti_evs))
-        #rule = ddd.rules.yy
-        #dd_result = ddd.execute_with_ddd(circuit=circuits[0], executor=executor, rule=rule)
-        #print(backend.confusion_matrix)
         #confusion_matrices = np.tile(backend.confusion_matrix, (32, 1, 1))
   
         #inverse_confusion_matrix = generate_tensored_inverse_confusion_matrix(backend.num_qubits, confusion_matrices=confusion_matrices)
@@ -129,6 +122,6 @@ def cleanTest():
         print(evs, np.mean(evs))
         print(miti_evs, np.mean(miti_evs))
 
-
-cleanTest()
+testDDD()
+#cleanTest()
 
