@@ -73,12 +73,13 @@ for c in circuits:
         mitiq_fid = fidelity(perfect_counts, processed_counts)
         print(mitiq_fid)        
 
-        mitigated_counts = mit.apply_correction(processed_counts, qubits=list(range(c.num_qubits)))
+        mapping = mthree.utils.final_measurement_mapping(tqc_infl)        
+        mitigated_counts = mit.apply_correction(processed_counts, qubits=mapping)
         mitigated_counts = {bitstring: count * 10000 for bitstring, count in mitigated_counts.items() if count > 0}
         #print(mitigated_counts)
         doublemitiq_fid = fidelity(perfect_counts, mitigated_counts)
         print(doublemitiq_fid)
-        
+
         print(mitiq_fid / origin_fid)
         print(doublemitiq_fid / origin_fid)
 
