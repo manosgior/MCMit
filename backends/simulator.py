@@ -17,9 +17,5 @@ def simulatorFromBackend(backend: GenericBackendV2):
     
     return simulator
 
-
-backend = loadBackend("backends/QPUs/GuadalupeDQC_0.015")
-#print(len(backend.target.qubit_properties))
-#exit()
-
-simulatorFromBackend(backend)
+def getNoiselessSimulator():
+    return AerSimulator()
