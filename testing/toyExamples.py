@@ -50,12 +50,14 @@ simulator = simulatorFromBackend(backend)
 mit = mthree.M3Mitigation(simulator)
 mit.cals_from_system()
 
-benchmarks = load_qasm_files(benchname="ghz", nqbits=(8, 16), benchmark_suites=["QOSLib"], optional_args=[])
+benchmarks = load_qasm_files(benchname="qaoa", nqbits=(2, 8), benchmark_suites=["MQTBench"], optional_args=[])
 circuits = [QuantumCircuit.from_qasm_file(b) for b in benchmarks]
 circuits = sorted(circuits, key=getSize)
 
 for c in circuits:
     print("!" * 10, str(c.num_qubits), "!" * 10)
+    print(c)
+    continue
     for M in [1, 3, 5, 7]:
         print("_" * 8 + str(M) + "_" * 8)
         perfect_counts = {'0' * c.num_qubits : 5000, '1' * c.num_qubits : 5000}
