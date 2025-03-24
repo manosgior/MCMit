@@ -30,6 +30,7 @@ class DAG(nx.DiGraph):
 
         for i, instr in enumerate(circuit):
             self.add_node(i, instr=instr)
+
             for qubit in instr.qubits:
                 next_op = _next_op_on_qubit(qubit, i)
                 if next_op > -1:
@@ -84,9 +85,11 @@ class DAG(nx.DiGraph):
     def to_circuit(self) -> QuantumCircuit:
         order = list(nx.topological_sort(self))
         circuit = QuantumCircuit(*self._qregs, *self._cregs)
+
         for i in order:
             instr = self.nodes[i]["instr"]
             circuit.append(instr)
+
         return circuit
 
     def qubit_dependencies(self) -> dict[Qubit, set[Qubit]]:

@@ -5,65 +5,65 @@ from collections import Counter
 from helpers.dag import *
 
 import networkx as nx
+import matplotlib.pyplot as plt
 
+def convert_int_to_qreg(value: int) -> int:
+    result = []
+    bit_position = 0
+    while value > 0:
+        if value & 1:
+            result.append(bit_position)
+        value >>= 1
+        bit_position += 1
+    return result
 
-def add_redundant_measurements(circuit: QuantumCircuit, N: int = 2) -> tuple[QuantumCircuit, list[ClassicalRegister]]:
+def add_redundant_measurements(circuit: QuantumCircuit, N: int = 2) -> QuantumCircuit:
     dag = DAG(circuit)
-    new_cregs = []
     counter = 0
+    to_fix_ops = []
 
     dag.remove_cregs()
 
     for node in nx.topological_sort(dag):
         instr = dag.get_node_instr(node)
+        if instr.condition is not None:
+            to_fix_ops.append(node)
+            print(instr.condition)
+            print(convert_int_to_qreg(instr.condition[1]))
+ 
         qubits = instr.qubits
+
         if isinstance(instr.operation, Measure):
-            print(qubits)
+            prev = list(dag.predecessors(node))
+            if len(prev) > 0:
+                assert(len(prev) == 1)
+                prev = prev[0]
+                dag.remove_edge(prev, node)
+            next = list(dag.successors(node))
+            if len(next) > 0:
+                assert(len(next) == 1)
+                next = next[0]
+                dag.remove_edge(node, next)            
+
             creg = ClassicalRegister(N + 1, name=f"m_{qubits[0]._index}_{counter}")
-            
-            #op.clbits = creg[0]
-            #new_inst = Instruction(op)
-
             counter += 1
-            new_cregs.append(creg)
-
             dag.add_creg(creg)
-
-            print(list(dag.successors(node)))
-
-            print(new_inst)
-            exit()
             
+            for i in range(N + 1):
+                new_inst = CircuitInstruction(instr.operation, instr.qubits, [creg[i]])
+                id = dag.add_instr_node(new_inst)
+                dag.add_edge(prev, id)
+                prev = id
+            
+            if isinstance(next, int):
+                dag.add_edge(prev, next)
+
+            dag.remove_node(node)
+
+            #for op in to_fix_ops:
 
 
-    # Identify all measurement nodes
-    measurement_nodes = [node for node in dag.nodes() if isinstance(node, DAGOpNode) and node.op.name == "measure"]
-
-    for i, node in enumerate(measurement_nodes):
-        qubit = node.qargs[0]
-        creg = ClassicalRegister(N + 1, name=f"m_{qubit._index}_{i}")
-        new_cregs.append(creg)
-
-        dag.add_creg(creg) 
-
-        tmp_dag = DAGCircuit()
-        reg = QuantumRegister(size=1, name=node.qargs[0]._register.name)
-        tmp_dag.add_qreg(reg)
-        tmp_dag.add_creg(creg)
-        
-        # Insert N new measurements immediately after the original one
-        for j in range(N + 1):
-            tmp_dag.apply_operation_back(node.op.copy(), reg, [creg[j]]) 
-
-        print(tmp_dag.qubits, tmp_dag.clbits)
-
-        dag.substitute_node_with_dag(node, tmp_dag, propagate_condition=True)
-        print(dag_to_circuit(dag))
-        exit()
-        #dag.remove_op_node(node)
-        
-
-    return dag_to_circuit(dag), new_cregs
+    return dag.to_circuit()
 
 
 def majority_vote_counts(raw_counts: dict[str, int]) -> dict[str, int]:

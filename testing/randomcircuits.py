@@ -1,7 +1,7 @@
 from backends.backend import loadBackend, getRealEagleBackend
 from backends.simulator import simulatorFromBackend, getNoiselessSimulator
 
-from analysis.properties import countNonLocalGates, countMeasurements
+from analysis.properties import countNonLocalGates, getMeasurements
 from analysis.fidelity import fidelity
 
 from error_mitigation.repeated_measurements import add_redundant_measurements, majority_vote_counts
@@ -9,11 +9,13 @@ from error_mitigation.repeated_measurements import add_redundant_measurements, m
 from qiskit.circuit.random import random_circuit
 from qiskit.circuit import QuantumCircuit
 from qiskit import transpile
+from qiskit.converters import circuit_to_dag
+from qiskit.qasm3 import dumps
 
 
-def getMCMBinaryOPratio(circuit: QuantumCircuit, offset: int = 10) -> float:
+def getMCMBinaryOPratio(circuit: QuantumCircuit) -> float:
     binary_ops = countNonLocalGates(circuit)
-    measurements = countMeasurements(circuit) - offset
+    measurements = getMeasurements(circuit, include_final=False) 
 
     if binary_ops == 0:
         return float('inf')
@@ -32,12 +34,20 @@ circs = randomCircuits(n=1, num_qubits=5, depth=8, conditional=True, reset=True)
 
 c = circs[0]
 print(c)
+#print(dumps(c))
 
 tqc = transpile(c, getNoiselessSimulator())
 perfect_counts = getNoiselessSimulator().run(tqc, shots=10000).result().get_counts()
 
-fixed = add_redundant_measurements(c)[0]
-print(fixed)
+fixed = add_redundant_measurements(c)
+#print(dumps(fixed))
+exit()
+dag = circuit_to_dag(fixed)
+
+#for inst in fixed.data:
+    #print(inst)
+
+#exit()
 
 backend = getRealEagleBackend()
 simulator = simulatorFromBackend(backend)
