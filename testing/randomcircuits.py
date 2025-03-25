@@ -6,6 +6,7 @@ from analysis.fidelity import fidelity
 
 from error_mitigation.repeated_measurements import add_redundant_measurements, majority_vote_counts
 
+
 from qiskit.circuit.random import random_circuit
 from qiskit.circuit import QuantumCircuit
 from qiskit import transpile

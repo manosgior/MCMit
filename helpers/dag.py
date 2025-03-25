@@ -151,6 +151,17 @@ class DAG(nx.DiGraph):
         for node in nodes_to_remove:
             self.remove_node(node)
 
+    def replace_node(self, node_before: int, node_after: int) -> None:
+        prev = list(self.predecessors(node_before))
+        for p in prev:
+            self.remove_edge(p, node_before)
+            self.add_edge(p, node_after)
+
+        nxt = list(self.successors(node_before))
+        for n in nxt:
+            self.remove_edge(node_before, n)
+            self.add_edge(node_after, n)
+
     def compact(self) -> None:
         # get the used qubits
         used_qubits: set[Qubit] = set()
@@ -162,10 +173,13 @@ class DAG(nx.DiGraph):
             qubit: new_qreg[i] for i, qubit in enumerate(used_qubits)
         }
         # update the circuit
-        for node in self.nodes:
+        for node in nx.topological_sort(self):
             instr = self.get_node_instr(node)
-            new_qubits = [qubit_mapping[qubit] for qubit in instr.qubits]
-            instr.qubits = new_qubits
+            new_instr = CircuitInstruction(
+                instr.operation, [qubit_mapping[qubit] for qubit in instr.qubits], instr.clbits
+            )
+            new_node = self.add_instr_node(new_instr)
+            self.replace_node(node, new_node)        
 
         self._qregs = [new_qreg]
 

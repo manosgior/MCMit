@@ -18,7 +18,7 @@ def collect_files_in_directory(directory, nqbits: tuple[int, int]):
 
     return files
 
-def collect_files(base_dir, level1, level2, nqbits: tuple[int, int], additional_levels):
+def collect_files(base_dir, level1, level2, nqbits: tuple[int, int], additional_levels: list[str] = []):
     files = []
     level1_path = os.path.join(base_dir, level1)
 
@@ -27,15 +27,19 @@ def collect_files(base_dir, level1, level2, nqbits: tuple[int, int], additional_
     else:
         return []
 
-    for root, dirs, filenames in os.walk(level2_path):
-        if len(additional_levels) == 0:
+    if len(additional_levels) > 0:
+        level2_path = os.path.join(level2_path, *additional_levels)
+
+    if os.path.exists(level2_path):
+        for root, dirs, filenames in os.walk(level2_path):
+            #if len(additional_levels) == 0:
             files = files + collect_files_in_directory(root, nqbits)
-        else:
-            level_path = os.path.join(root, *additional_levels)
-            if os.path.exists(level_path):
-                files = files + collect_files_in_directory(level_path, nqbits)
             #else:
-                #raise ValueError("Wrong benchmark parameter")
+                #level_path = os.path.join(root, *additional_levels)
+                #if os.path.exists(level_path):
+                    #files = files + collect_files_in_directory(level_path, nqbits)
+                #else:
+                    #raise ValueError("Wrong benchmark parameter")
     return files
 
 def load_qasm_files(benchname: str, nqbits: tuple[int, int] = (2, 1000), benchmark_suites: list[str] = valid_benchmark_suites, optional_args: list[str] = []):

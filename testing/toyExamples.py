@@ -8,6 +8,8 @@ from collections import Counter
 
 import mthree
 
+from applications.qubit_reuse.qubit_reuse import QubitReuser
+
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
@@ -45,18 +47,23 @@ def processCounts(counts: dict[str, int], N: int, M: int) -> dict[str, int]:
     return processed_counts
 
 
-backend = getRealEagleBackend()
-simulator = simulatorFromBackend(backend)
-mit = mthree.M3Mitigation(simulator)
-mit.cals_from_system()
+#backend = getRealEagleBackend()
+#simulator = simulatorFromBackend(backend)
+#mit = mthree.M3Mitigation(simulator)
+#mit.cals_from_system()
 
-benchmarks = load_qasm_files(benchname="qaoa", nqbits=(2, 8), benchmark_suites=["MQTBench"], optional_args=[])
+benchmarks = load_qasm_files(benchname="qaoa", nqbits=(5, 8), benchmark_suites=["QOSLib"], optional_args=["MaxCut", "power-law"])
 circuits = [QuantumCircuit.from_qasm_file(b) for b in benchmarks]
 circuits = sorted(circuits, key=getSize)
 
+
 for c in circuits:
-    print("!" * 10, str(c.num_qubits), "!" * 10)
+    print("*" * 3, str(c.num_qubits), "*" * 3)
     print(c)
+    print("-" * 50)
+    reuser = QubitReuser(c.num_qubits - 2, dynamic=False)
+    c_qr = reuser.run(c)
+    print(c_qr)
     continue
     for M in [1, 3, 5, 7]:
         print("_" * 8 + str(M) + "_" * 8)
