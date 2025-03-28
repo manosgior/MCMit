@@ -52,7 +52,7 @@ def processCounts(counts: dict[str, int], N: int, M: int) -> dict[str, int]:
 #mit = mthree.M3Mitigation(simulator)
 #mit.cals_from_system()
 
-benchmarks = load_qasm_files(benchname="qaoa", nqbits=(5, 8), benchmark_suites=["QOSLib"], optional_args=["MaxCut", "power-law"])
+benchmarks = load_qasm_files(benchname="qaoa", nqbits=(5, 6), benchmark_suites=["QOSLib"], optional_args=["MaxCut", "power-law"])
 circuits = [QuantumCircuit.from_qasm_file(b) for b in benchmarks]
 circuits = sorted(circuits, key=getSize)
 

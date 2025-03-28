@@ -81,17 +81,15 @@ def reuse(dag: DAG, qubit: Qubit, reused_qubit: Qubit) -> None:
     dag.add_edge(last_node, reset_node)
     dag.add_edge(reset_node, first_node)
 
-    for node in nx.topological_sort(dag):
-        instr = dag.get_node_instr(node)
+    for node in dag.nodes:
+        instr = dag.get_node_instr(node)  
+
         if any(instr_qubit == qubit for instr_qubit in instr.qubits):
             qubits = [
                 reused_qubit if instr_qubit == qubit else instr_qubit
                 for instr_qubit in instr.qubits
             ]
-            new_inst = CircuitInstruction(instr.operation, qubits, instr.clbits)
-            new_node = dag.add_instr_node(new_inst)
-
-            dag.replace_node(node, new_node)
+            dag.nodes[node]["instr"] = instr.replace(qubits=qubits)
 
 def is_dependent_qubit(dag: DAG, u_qubit: Qubit, v_qubit: Qubit) -> bool:
     """Checks if any operation on u_qubit depends on any operation on v_qubit.

@@ -173,13 +173,9 @@ class DAG(nx.DiGraph):
             qubit: new_qreg[i] for i, qubit in enumerate(used_qubits)
         }
         # update the circuit
-        for node in nx.topological_sort(self):
+        for node in self.nodes:
             instr = self.get_node_instr(node)
-            new_instr = CircuitInstruction(
-                instr.operation, [qubit_mapping[qubit] for qubit in instr.qubits], instr.clbits
-            )
-            new_node = self.add_instr_node(new_instr)
-            self.replace_node(node, new_node)        
+            self.nodes[node]["instr"] = instr.replace(qubits=[qubit_mapping[qubit] for qubit in instr.qubits])
 
         self._qregs = [new_qreg]
 
