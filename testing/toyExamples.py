@@ -13,6 +13,9 @@ from applications.qubit_reuse.qubit_reuse import QubitReuser
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
+from qiskit_ibm_runtime import QiskitRuntimeService, Sampler, Options
+from qiskit_ibm_runtime import EstimatorV2 as Estimator
+
 def majorityVote(bits: list[int]) -> int:
     count = Counter(bits)
 
@@ -51,19 +54,36 @@ def processCounts(counts: dict[str, int], N: int, M: int) -> dict[str, int]:
 #simulator = simulatorFromBackend(backend)
 #mit = mthree.M3Mitigation(simulator)
 #mit.cals_from_system()
-
-benchmarks = load_qasm_files(benchname="qaoa", nqbits=(5, 6), benchmark_suites=["QOSLib"], optional_args=["MaxCut", "power-law"])
+service = QiskitRuntimeService(channel="ibm_quantum")
+benchmarks = load_qasm_files(benchname="qaoa", nqbits=(30, 50), benchmark_suites=["QOSLib"], optional_args=["MaxCut", "regular", "qaoa_r4"])
 circuits = [QuantumCircuit.from_qasm_file(b) for b in benchmarks]
 circuits = sorted(circuits, key=getSize)
 
+resilience_levels = [0, 1, 2]
+num_executions = 5  # Runs per circuit per resilience level
+backend = service.least_busy(operational=True, simulator=False)
 
-for c in circuits:
-    print("*" * 3, str(c.num_qubits), "*" * 3)
-    print(c)
-    print("-" * 50)
-    reuser = QubitReuser(c.num_qubits - 2, dynamic=False)
-    c_qr = reuser.run(c)
-    print(c_qr)
+
+for resilience in resilience_levels:
+    print(f"Running Resilience: {resilience}")
+
+    # Run circuit using Qiskit Runtime
+    with Estimator(backend, options={"resilience_level": resilience}) as estimator:
+        job = estimator.run(circuits)
+        print(job.usage_estimation())
+        result = job.result()
+        print(job.usage())
+        print(job.metrics())
+    
+    #print(f"Result: {result.quasi_dists}\n")
+            
+    
+    #print("*" * 3, str(c.num_qubits), "*" * 3)
+    #print(c)
+    #print("-" * 50)
+    #reuser = QubitReuser(c.num_qubits - 1, dynamic=False)
+    #c_qr = reuser.run(c)
+    #print(c_qr)
     continue
     for M in [1, 3, 5, 7]:
         print("_" * 8 + str(M) + "_" * 8)

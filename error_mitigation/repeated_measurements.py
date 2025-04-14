@@ -1,6 +1,9 @@
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 from qiskit.circuit import CircuitInstruction, Measure
-from collections import Counter
+from qiskit.primitives import BitArray
+
+from collections import Counter, defaultdict
+from itertools import product
 
 from helpers.dag import *
 
@@ -65,6 +68,11 @@ def add_redundant_measurements(circuit: QuantumCircuit, N: int = 2) -> QuantumCi
 
     return dag.to_circuit()
 
+def majority_vote(bitstring: str) -> str:
+    return Counter(bitstring).most_common(1)[0][0] 
+
+def cleanup_bitstrings_per_creg(bitstrings: list[str]) -> list[str]:
+    return "".join([majority_vote(bitstring) for bitstring in bitstrings])
 
 def majority_vote_counts(raw_counts: dict[str, int]) -> dict[str, int]:
     """Processes raw measurement counts where each qubit has three redundant measurements.
@@ -73,9 +81,20 @@ def majority_vote_counts(raw_counts: dict[str, int]) -> dict[str, int]:
 
     for bitstring, count in raw_counts.items():
         bit_groups = bitstring.split()  # Split on whitespace to get 3-bit groups
-        corrected_bits = [Counter(group).most_common(1)[0][0] for group in bit_groups]  # Majority vote
+        corrected_bits = [majority_vote(group) for group in bit_groups]  # Majority vote
 
         corrected_bitstring = "".join(corrected_bits)  # Reconstruct bitstring with spaces
         corrected_counts[corrected_bitstring] = corrected_counts.get(corrected_bitstring, 0) + count
 
     return corrected_counts
+
+def majority_vote_counts_separate_cregs(list_bitstings: list[list[str]]) -> dict[str, int]:
+    reduced = defaultdict(int)
+
+    for i in range(len(list_bitstings[0])):
+        correct_bitstring = ''
+        for j in range(len(list_bitstings)):
+            correct_bitstring += list_bitstings[j][i]
+        reduced[correct_bitstring] += 1
+    return dict(reduced)
+

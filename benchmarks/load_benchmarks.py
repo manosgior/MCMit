@@ -31,6 +31,7 @@ def collect_files(base_dir, level1, level2, nqbits: tuple[int, int], additional_
         level2_path = os.path.join(level2_path, *additional_levels)
 
     if os.path.exists(level2_path):
+        
         for root, dirs, filenames in os.walk(level2_path):
             #if len(additional_levels) == 0:
             files = files + collect_files_in_directory(root, nqbits)
