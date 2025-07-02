@@ -61,5 +61,5 @@ print(qc)
 
 dependency_graph = circuit_to_dependency_graph(qc)
 #print_dependency_graph(dependency_graph, "dgraph.png")
-modified_qc = add_measurement_redundancy(qc, 2, 2)
+modified_qc = add_measurement_redundancy(qc, 1, 2)
 print(modified_qc)

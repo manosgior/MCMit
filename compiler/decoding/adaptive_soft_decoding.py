@@ -28,8 +28,7 @@ def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> Quant
     # Convert to DAG and find MCMs
     dag = DAG(circuit)
     mcms: List[Tuple[int, List[int]]] = []
-    #qubits = defaultdict()
-    n_qubits = 0
+    measured_qubits = set()  # Track unique measured qubits
     
     # Find MCMs by checking for measurements with successors
     for node in dag.nodes():
@@ -37,8 +36,7 @@ def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> Quant
         if hasattr(instr.operation, 'name') and instr.operation.name == 'measure':
             successors = list(dag.successors(node))
             if successors:
-                #qubits[instr.operation.qubits[0]] = 'true'
-                n_qubits += 1
+                measured_qubits.add(instr.qubits[0])  # Add measured qubit to set
                 mcms.append((node, successors))
     
     if not mcms or M <= 0:
@@ -46,7 +44,7 @@ def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> Quant
     
     # Create new circuit with ancillas
     num_mcms = min(len(mcms), M)
-    qr_anc = QuantumRegister(N * n_qubits, 'anc')
+    qr_anc = QuantumRegister(N * len(measured_qubits), 'anc')
     cr_ancs = [ClassicalRegister(N+1, f'cr_anc_{i}') for i in range(num_mcms)]
 
     regs = []
@@ -63,7 +61,9 @@ def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> Quant
     
     # Track MCM modifications
     processed_mcms = 0
-    mcm_to_ancillas: Dict[int, List[int]] = {}
+    #mcm_to_ancillas: Dict[int, List[int]] = {}
+    qubit_to_ancillas = {}  # Maps measured qubit to its ancilla indices
+    mcm_to_creg = {}  # Maps MCM node to its classical register
     
     # Process circuit instructions
     for idx, instr in enumerate(circuit.data):
@@ -74,26 +74,29 @@ def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> Quant
 
         if mcm_match:
             measured_qubit = qargs[0]
-            anc_start = processed_mcms * N
-            # Store both quantum and classical register indices
-            mcm_to_ancillas[idx] = {
-                'qubits': list(range(anc_start, anc_start + N)),
-                'creg': cr_ancs[processed_mcms]
-            }
+
+            # Get or assign ancilla qubits for this measured qubit
+            if measured_qubit not in qubit_to_ancillas:
+                anc_start = len(qubit_to_ancillas) * N
+                qubit_to_ancillas[measured_qubit] = list(range(anc_start, anc_start + N))
+            
+            # Reset ancillas if they were used before
+            for anc_idx in qubit_to_ancillas[measured_qubit]:
+                new_circ.reset(qr_anc[anc_idx])
+            
+            # Store mapping of MCM to its classical register
+            mcm_to_creg[idx] = cr_ancs[processed_mcms]
             
             # Add redundant measurements
-            new_cargs = [cr_ancs[processed_mcms][0]]            
-            
-            for i, anc_idx in enumerate(mcm_to_ancillas[idx]['qubits']):
-                # Entangle and measure ancilla
-                #new_circ.h(qr_anc[anc_idx])     
+            new_cargs = [cr_ancs[processed_mcms][0]]
+            for i, anc_idx in enumerate(qubit_to_ancillas[measured_qubit]):
                 new_circ.cx(measured_qubit, qr_anc[anc_idx])
-                new_circ.measure(qr_anc[anc_idx], mcm_to_ancillas[idx]['creg'][i+1])
+                new_circ.measure(qr_anc[anc_idx], cr_ancs[processed_mcms][i+1])
             
             new_instr = CircuitInstruction(op, qargs, new_cargs)
             new_circ.append(new_instr)
-
             processed_mcms += 1
+           
             
         # Modify conditional operations
         elif isinstance(op, Instruction) and op.name == 'if_else':
@@ -102,19 +105,18 @@ def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> Quant
             condition_val = op.condition[1]
             
             for m_idx, successors in mcms:
-                if m_idx in mcm_to_ancillas and condition_reg == circuit.data[m_idx].clbits[0]:
+                 if m_idx in mcm_to_creg and condition_reg == circuit.data[m_idx].clbits[0]:
                     mcm_node = m_idx
                     break
 
             #new_circ.append(op, qargs, cargs)
 
-            if mcm_node in mcm_to_ancillas:
-                creg = mcm_to_ancillas[mcm_node]['creg']
+            if mcm_node in mcm_to_creg:
+                creg = mcm_to_creg[mcm_node]
                 if N % 2 == 0: # Majority voting for even N
                     votes = [expr.lift(creg[i]) for i in range(N+1)]
                     majority = _create_majority_voting(votes)
                     new_condition = expr.bit_and(op.condition[0], majority)
-                    print(new_condition)
                 else:  # AND for odd N
                     votes = [expr.lift(creg[i]) for i in range(0, N+1)]                    
                     # Check if all votes are 1
