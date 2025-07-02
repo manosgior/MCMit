@@ -5,7 +5,7 @@ import networkx as nx
 from qiskit.circuit import Qubit, CircuitInstruction, Reset, Measure
 from qiskit.circuit.library.standard_gates import XGate
 
-from helpers.dag import *
+from analysis.dag import *
 
 class QubitReuser():
     def __init__(self, size_to_reach: int, dynamic: int = True) -> None:

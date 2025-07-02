@@ -2,6 +2,11 @@ from applications.long_range_CNOT import get_dynamic_CNOT_circuit
 from applications.constant_depth_GHZ import create_constant_depth_ghz
 from applications.quantum_teleportation import *
 
+from analysis.dag import *
+from analysis.properties import *
+
+from compiler.decoding.adaptive_soft_decoding import add_measurement_redundancy
+
 from qiskit import QuantumCircuit
 
 def test_long_range_CNOT(limit: int) -> list[QuantumCircuit]:
@@ -37,7 +42,7 @@ def test_constant_depth_GHZ(limit: int) -> list[QuantumCircuit]:
         circuits.append(circuit)
     return circuits
 
-def test_quantum_teleportation(reps: int) -> QuantumCircuit:
+def test_quantum_teleportation(min: int, max: int) -> QuantumCircuit:
     """
     Test the quantum teleportation circuit generation.
     
@@ -45,11 +50,16 @@ def test_quantum_teleportation(reps: int) -> QuantumCircuit:
         QuantumCircuit: The generated quantum teleportation circuit.
     """
     circuits = []
-    for i in range(1, reps + 1):
+    for i in range(min, max + 1):
         circuits.append(create_repeated_teleportation_circuit(i))
 
     return circuits
 
-qcs = test_quantum_teleportation(5)
-for qc in qcs:
-    print(qc)
+qcs = test_quantum_teleportation(1, 2)
+qc = qcs[0]
+print(qc)
+
+dependency_graph = circuit_to_dependency_graph(qc)
+#print_dependency_graph(dependency_graph, "dgraph.png")
+modified_qc = add_measurement_redundancy(qc, 2, 2)
+print(modified_qc)

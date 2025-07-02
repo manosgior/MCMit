@@ -87,6 +87,6 @@ def create_repeated_teleportation_circuit(n_teleports: int = 1) -> QuantumCircui
         # Reset source and auxiliary qubits for next teleportation
         qc.reset([source, 1])
 
-        qc.measure(target, cr2)  # Measure the target qubit to see the teleported state
+    qc.measure(target, cr2)  # Measure the target qubit to see the teleported state
     
     return qc

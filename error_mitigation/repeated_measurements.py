@@ -5,7 +5,7 @@ from qiskit.primitives import BitArray
 from collections import Counter, defaultdict
 from itertools import product
 
-from helpers.dag import *
+from analysis.dag import *
 
 import networkx as nx
 import matplotlib.pyplot as plt

@@ -1,6 +1,7 @@
 from typing import Iterator
 import itertools
 from collections import Counter
+import matplotlib.pyplot as plt
 
 import networkx as nx
 from networkx.classes.graph import Graph
@@ -15,6 +16,19 @@ from qiskit.circuit import (
     Barrier,
     Measure,
 )
+
+name_map = {
+    "cx": "cx",
+    "h": "h",
+    "rz": "rz",
+    "x": "x",
+    "y": "y",
+    "z": "z",
+    "id": "id",
+    "measure": "M",
+    "reset": "R",
+    "if_else": "if",
+}
 
 class DAG(nx.DiGraph):
     def __init__(self, circuit: QuantumCircuit):
@@ -266,3 +280,90 @@ def get_qubit_dependencies(dag: DAG) -> dict[Qubit, Counter[Qubit]]:
         qubit_depends_on[qubit].pop(qubit, None)
 
     return qubit_depends_on
+
+def circuit_to_dependency_graph(circuit: QuantumCircuit) -> nx.DiGraph:
+    """
+    Converts a quantum circuit to an operation dependency graph.
+    Nodes are operations (gates/measurements) and edges represent qubit dependencies.
+    
+    Args:
+        circuit: Input quantum circuit
+        
+    Returns:
+        nx.DiGraph: Directed graph where nodes are operations and edges represent dependencies
+    """
+    # Create a directed graph
+    op_dag = nx.DiGraph()
+    
+    # Keep track of last operation on each qubit
+    last_op = {qubit: None for qubit in circuit.qubits}
+    
+    # Add nodes and edges for each instruction
+    for idx, instr in enumerate(circuit):
+        op, qubits = instr.operation, instr.qubits
+        
+        # Skip barriers
+        if isinstance(op, Barrier):
+            continue
+            
+        # Add node for current operation
+        op_dag.add_node(idx, operation=op, qubits=qubits)
+        
+        # Add edges from last operations on these qubits
+        for qubit in qubits:
+            if last_op[qubit] is not None:
+                op_dag.add_edge(
+                    last_op[qubit], 
+                    idx, 
+                    qubit=qubit
+                )
+            # Update last operation for this qubit
+            last_op[qubit] = idx
+            
+    return op_dag
+
+def print_dependency_graph(dag: nx.DiGraph, filename: str, figsize: tuple = (10, 8)):
+    """
+    Plots the operation dependency graph and saves it to a file.
+    
+    Args:
+        dag: Operation dependency graph
+        filename: Path to save the plot
+        figsize: Figure size as (width, height) tuple
+    """
+    # Create figure
+    plt.figure(figsize=figsize)
+
+    # Create node labels
+    node_labels = {}
+    for node in dag.nodes():
+        op = dag.nodes[node]['operation']
+        qubits = dag.nodes[node]['qubits']
+        # Create readable label
+        if hasattr(op, 'name'):
+            label = f"{name_map[op.name]}\n{[q.index for q in qubits]}"
+        else:
+            label = f"{op}\n{[q.index for q in qubits]}"
+        node_labels[node] = label
+
+        # Set up layout
+    pos = nx.spring_layout(dag)
+
+    # Draw graph elements
+    nx.draw_networkx_nodes(dag, pos, node_color='lightblue', 
+                        node_size=700, alpha=0.6)
+    nx.draw_networkx_labels(dag, pos, node_labels, font_size=8)
+
+    # Draw edges with qubit labels
+    edge_labels = nx.get_edge_attributes(dag, 'qubit')
+    edge_labels = {k: f"q[{v.index}]" for k, v in edge_labels.items()}
+    nx.draw_networkx_edge_labels(dag, pos, edge_labels, font_size=8)
+    nx.draw_networkx_edges(dag, pos, edge_color='gray', 
+                        arrowsize=10, alpha=0.5)
+
+    plt.title("Operation Dependency Graph")
+    plt.axis('off')
+
+    # Save plot
+    plt.savefig(filename, bbox_inches='tight', dpi=300)
+    plt.close()
