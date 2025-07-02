@@ -1,2 +1,2 @@
-# HybridDQC
-Hybrid Quantum-Classical Distributed Quantum Computing
+# MCMit
+Mid-circuit Measurement Error Mitigation
