@@ -1,2 +1,2 @@
-- Create a DQC of 3 133-qubit coupling maps
-- 
+- Check why only 1-2 ancilla flags are added in adaptive_soft_decoding
+- Integrate MCM removal
