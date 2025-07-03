@@ -1,8 +1,16 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.classical import expr, types
+from qiskit.transpiler import CouplingMap
+from qiskit.transpiler.passes import CountOps
 from qiskit.circuit import Instruction
-from typing import List, Dict, Tuple
+from qiskit import transpile
+
+from qiskit.circuit.library import CXGate
+from qiskit.circuit import Measure
+
+from typing import List, Dict, Set, Tuple
 from collections import defaultdict
+import random
 
 from analysis.dag import *
 
@@ -95,8 +103,7 @@ def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> Quant
             
             new_instr = CircuitInstruction(op, qargs, new_cargs)
             new_circ.append(new_instr)
-            processed_mcms += 1
-           
+            processed_mcms += 1           
             
         # Modify conditional operations
         elif isinstance(op, Instruction) and op.name == 'if_else':
@@ -156,3 +163,193 @@ def _create_majority_voting(votes: List) -> expr:
             majority = expr.bit_or(majority, term)
     
     return majority
+
+def add_parity_checks_already_mapped(circuit: QuantumCircuit, coupling_map: CouplingMap) -> Tuple[QuantumCircuit, bool]:
+    """
+    Adds optimal number of ancilla qubits to a circuit with MCMs based on physical connectivity.
+    Ancillas are added only if they can be connected to two program qubits without requiring SWAP gates.
+    
+    Args:
+        circuit: Input quantum circuit with MCMs
+        coupling_map: Physical connectivity of the quantum device
+        
+    Returns:
+        QuantumCircuit: Modified circuit with added ancilla qubits and their measurements
+    """
+    
+    # 1. Convert coupling map to graph
+    physical_graph = nx.Graph()
+    physical_graph.add_edges_from(coupling_map.get_edges())
+    
+    # 2. Find initial mapping of program qubits to physical qubits
+    # This assumes the circuit is already mapped to the device
+    program_to_physical = {}
+    physical_to_program = {}
+
+    if hasattr(circuit, 'layout'):
+        initial_layout = circuit.layout.initial_index_layout(filter_ancillas=True)
+
+        for i in range(len(initial_layout)):
+            program_to_physical[i] = initial_layout[i]
+            physical_to_program[initial_layout[i]] = i
+  
+    # 3. Find available physical qubits adjacent to program qubits
+    program_locations = set(program_to_physical.values())
+    available_ancillas = _find_available_neighbors(physical_graph, program_locations)
+
+    if not available_ancillas:
+        return circuit.copy(), False
+    
+    # 4. Create new circuit with ancilla qubits
+    num_ancillas = len(available_ancillas)
+    qr_anc = QuantumRegister(num_ancillas, 'anc')
+    cr_anc = ClassicalRegister(num_ancillas, 'cr_anc')
+    
+    regs = []
+    # Add original quantum and classical registers
+    for qreg in circuit.qregs:
+        regs.append(qreg)
+    for creg in circuit.cregs:
+        regs.append(creg)
+
+    # Add new registers
+    regs.append(qr_anc)
+    regs.extend(cr_anc)
+
+    new_circ = QuantumCircuit(*regs)
+    
+    # 5. Copy original circuit
+    new_circ.data.extend(circuit.data)
+    
+    # 6. Add ancilla operations
+    for i, (_, program_neighbors) in enumerate(available_ancillas):
+        # Get corresponding program qubits
+        prog_qubit1 = physical_to_program[program_neighbors[0]]
+        prog_qubit2 = physical_to_program[program_neighbors[1]]
+        
+        # Create GHZ-like state between program qubits and ancilla
+        #new_circ.h(qr_anc[i])
+        new_circ.cx(circuit.qubits[prog_qubit1], qr_anc[i])
+        new_circ.cx(circuit.qubits[prog_qubit2], qr_anc[i])
+        
+        # Measure ancilla
+        new_circ.measure(qr_anc[i], cr_anc[i])
+        
+        # Reset ancilla for potential reuse
+        new_circ.reset(qr_anc[i])
+    
+    return new_circ, True
+
+def add_parity_checks_greedy(circuit: QuantumCircuit, backend, max_attempts: int = 10):
+    initial_circuit = transpile(circuit, backend, optimization_level=3)
+    initial_cx_count = count_two_qubit_gates(initial_circuit)
+    
+    working_circuit = circuit.copy()
+    successful_additions = 0
+
+    while True:
+        best_circuit = None
+        best_cx_overhead = float('inf')
+        
+        # Try adding one ancilla with different qubit pairs
+        for _ in range(max_attempts):
+            # Create a copy for this attempt
+            test_circuit = working_circuit.copy()
+            
+            # Add new ancilla register
+            qr_anc = QuantumRegister(1, f'anc_{successful_additions}')
+            cr_anc = ClassicalRegister(1, f'cr_anc_{successful_additions}')
+            test_circuit.add_register(qr_anc, cr_anc)
+            
+            # Create DAG to identify final measurements
+            dag = DAG(test_circuit)
+            final_measure_pos = -1
+
+            # Find first final measurement (measurement with no successors)
+            for idx, instr in enumerate(test_circuit.data):
+                if (instr.operation.name == 'measure' and 
+                    not list(dag.successors(idx))):
+                    final_measure_pos = idx
+                    break
+
+            # Select random consecutive program qubits
+            n_qubits = len(working_circuit.qubits) - successful_additions
+            start_idx = random.randint(0, n_qubits - 2)
+            q1, q2 = start_idx, start_idx + 1
+            
+            new_data = []
+            for i, instr in enumerate(test_circuit.data):
+                if i == final_measure_pos:
+                    # Insert ancilla operations before first final measurement
+                    new_data.append(CircuitInstruction(CXGate(), [test_circuit.qubits[q1], qr_anc[0]], []))
+                    new_data.append(CircuitInstruction(CXGate(), [test_circuit.qubits[q2], qr_anc[0]], []))
+                    new_data.append(CircuitInstruction(Measure(), [qr_anc[0]], [cr_anc[0]]))
+                new_data.append(instr)
+            
+            test_circuit.data = new_data
+            
+            # Transpile and count CX gates
+            mapped_circuit = transpile(test_circuit, backend)
+            cx_count = count_two_qubit_gates(mapped_circuit) - 2  # Subtract the two CNOTs used to entangle ancilla
+            
+            # Calculate overhead
+            cx_overhead = cx_count - initial_cx_count
+            
+            # Update best if this attempt has less overhead
+            if cx_overhead < best_cx_overhead:
+                best_cx_overhead = cx_overhead
+                best_circuit = test_circuit
+        
+        # If no acceptable solution found, stop
+        if best_circuit is None or best_cx_overhead > initial_cx_count * 0.3:  # 30% threshold
+            break
+            
+        # Accept this addition and continue
+        working_circuit = best_circuit
+        successful_additions += 1
+    
+    return working_circuit
+
+def count_two_qubit_gates(circuit: QuantumCircuit) -> int:
+    """
+    Counts all two-qubit gates in a circuit.
+    
+    Args:
+        circuit: Input quantum circuit
+        
+    Returns:
+        int: Number of two-qubit gates
+    """
+    count = 0
+    for instr in circuit.data:
+        if len(instr.qubits) == 2:  # Any instruction with 2 qubits is a 2-qubit gate
+            count += 1
+    return count
+
+def _find_available_neighbors(
+    physical_graph: nx.Graph,
+    program_locations: Set[int],
+    min_connections: int = 2
+) -> List[Tuple[int, List[int]]]:
+    """
+    Finds physical qubits that can serve as ancillas based on connectivity.
+    
+    Args:
+        physical_graph: Device coupling graph
+        program_locations: Physical locations of program qubits
+        min_connections: Minimum required connections to program qubits
+        
+    Returns:
+        List of tuples (ancilla_location, [connected_program_qubits])
+    """
+    available = []
+    for node in physical_graph.nodes():
+        if node not in program_locations:
+            neighbors = list(physical_graph.neighbors(node))
+            program_neighbors = [n for n in neighbors if n in program_locations]
+            if len(program_neighbors) >= min_connections:
+                available.append((node, program_neighbors))
+    return available
+
+
+    

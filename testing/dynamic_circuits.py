@@ -2,12 +2,14 @@ from applications.long_range_CNOT import get_dynamic_CNOT_circuit
 from applications.constant_depth_GHZ import create_constant_depth_ghz
 from applications.quantum_teleportation import *
 
+from backends.backend import getRealEagleBackend
+
 from analysis.dag import *
 from analysis.properties import *
 
-from compiler.decoding.adaptive_soft_decoding import add_measurement_redundancy
+from compiler.decoding.adaptive_soft_decoding import *
 
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, transpile
 
 def test_long_range_CNOT(limit: int) -> list[QuantumCircuit]:
     """
@@ -26,7 +28,7 @@ def test_long_range_CNOT(limit: int) -> list[QuantumCircuit]:
     return circuits
 
 
-def test_constant_depth_GHZ(limit: int) -> list[QuantumCircuit]:
+def test_constant_depth_GHZ(min: int, max: int) -> list[QuantumCircuit]:
     """
     Test the constant depth GHZ circuit generation for a range of qubit counts.
     
@@ -37,7 +39,7 @@ def test_constant_depth_GHZ(limit: int) -> list[QuantumCircuit]:
         list[QuantumCircuits]: A list of generated quantum circuits.
     """
     circuits = []
-    for num_qubit in range(7, limit + 1, 2):
+    for num_qubit in range(min, max + 1, 2):
         circuit = create_constant_depth_ghz(num_qubit)
         circuits.append(circuit)
     return circuits
@@ -55,11 +57,15 @@ def test_quantum_teleportation(min: int, max: int) -> QuantumCircuit:
 
     return circuits
 
-qcs = test_quantum_teleportation(1, 2)
-qc = qcs[0]
-print(qc)
+qcs = test_constant_depth_GHZ(19, 21)
+#qc = qcs[0]
+#print(qc)
 
-dependency_graph = circuit_to_dependency_graph(qc)
-#print_dependency_graph(dependency_graph, "dgraph.png")
-modified_qc = add_measurement_redundancy(qc, 1, 2)
-print(modified_qc)
+backend = getRealEagleBackend()
+#tqc = transpile(qc, backend)
+#print(tqc)
+#circuit = add_parity_checks(tqc, backend.coupling_map)
+
+circuits = [add_parity_checks_greedy(qc, backend) for qc in qcs]
+for c in circuits:
+    print(c)

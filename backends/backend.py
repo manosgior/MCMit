@@ -1,7 +1,6 @@
 from qiskit.transpiler import Target, InstructionProperties, CouplingMap
 from qiskit.circuit import QuantumCircuit
 from qiskit import transpile
-#import qiskit.circuit.library as Gates
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers import QubitProperties
 from qiskit_ibm_runtime import QiskitRuntimeService
@@ -56,21 +55,21 @@ def getRealResolutionTimeFromEagle():
     return backend.dt
 
 def getRealEagleBackend():
-    service = QiskitRuntimeService(instance="ibm-q/open/main")
-    backend = service.backend("ibm_kyiv")
+    service = QiskitRuntimeService()
+    backend = service.backend("ibm_brisbane")
 
     return backend
 
 def heavyHexEagleCouplingMap():
-    service = QiskitRuntimeService(instance="ibm-q/open/main")
-    backend = service.backend("ibm_kyiv")
+    service = QiskitRuntimeService()
+    backend = service.backend("ibm_brisbane")
     #backend = service.backend("ibm_sherbrooke")
 
     return backend.coupling_map
 
 def heavySquareHeronCouplingMap():
-    service = QiskitRuntimeService(instance="ibm-q/open/main")
-    backend = service.backend("ibm_kyiv")
+    service = QiskitRuntimeService()
+    backend = service.backend("ibm_brisbane")
 
     base_coupling_map = backend.coupling_map
 
