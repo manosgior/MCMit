@@ -56,7 +56,7 @@ def getRealResolutionTimeFromEagle():
 
 def getRealEagleBackend():
     service = QiskitRuntimeService()
-    backend = service.backend("ibm_brisbane")
+    backend = service.backend("ibm_sherbrooke")
 
     return backend
 
@@ -133,7 +133,7 @@ def printCouplingMap(coupling_map: CouplingMap, layers: dict):
 
 class customBackend(GenericBackendV2):    
     
-    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), dt: float = defaultResolutionTime(),basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None, remote_gates: list[tuple] = []):
+    def __init__(self, name: str ="customDQCBackend", num_qubits: int = 16, coupling_map: CouplingMap = GuadalupeCouplingMap(), dt: float = defaultResolutionTime(), basis_gates: list[str] = defaultGateSet(), noise_model: Target = None, qubit_properties: list[QubitProperties] = None, remote_gates: list[tuple] = []):
         assert num_qubits == coupling_map.size()
 
         super().__init__(num_qubits, basis_gates=basis_gates, coupling_map=coupling_map, control_flow=True, dtm=dt, seed=1)
@@ -147,7 +147,8 @@ class customBackend(GenericBackendV2):
             for instruction, properties_dict in noise_model.items():
                 if properties_dict is not None:
                     for p in properties_dict.items():
-                        self.target.update_instruction_properties(instruction, p[0], p[1])
+                        if p[0][0] < num_qubits:
+                            self.target.update_instruction_properties(instruction, p[0], p[1])
 
         if qubit_properties == None:
             #self.addStateOfTheArtQubits()
@@ -182,7 +183,7 @@ class customBackend(GenericBackendV2):
         for g in gate_set:
             if g in ["id", "sx", "x", "rz", "rx", "h"]:
                 self.updateGateProps(gate=g, duration=50, error_med=0.00025, error_min=0.0001, error_max=0.015)
-            elif g in ["cz", "rzz", "cx"]:
+            elif g in ["cz", "rzz", "cx", "ecr"]:
                 self.updateGateProps(gate=g, duration=70, error_med=0.002, error_min=0.0009, error_max=0.06)
             elif g == "measure":
                 self.updateGateProps(gate=g, duration=70, error_med=0.01, error_min=0.002, error_max=0.5)
@@ -319,6 +320,62 @@ def constructDQCLarge(noise: float = 0.03):
 
     return backend_large
 
+def create_backend_from_layout(original_backend: GenericBackendV2, layout: list[int]) -> customBackend:
+    """
+    Creates a new backend containing only the qubits specified in the layout,
+    preserving their properties and connectivity.
+    
+    Args:
+        original_backend: Source backend to clone from
+        layout: List of qubit indices to include in new backend
+        
+    Returns:
+        customBackend: New backend with only the specified qubits
+    """
+    # Create graph from original coupling map
+    G = nx.Graph()
+    G.add_edges_from(original_backend.coupling_map.get_edges())
+    
+    # Extract subgraph for selected qubits
+    subgraph = G.subgraph(layout)
+    
+    # Create new coupling map from subgraph
+    # Need to remap qubit indices to be sequential
+    old_to_new = {old: new for new, old in enumerate(layout)}
+    new_edges = [(old_to_new[e[0]], old_to_new[e[1]]) 
+                 for e in subgraph.edges()]
+    new_coupling_map = CouplingMap(new_edges)
+    
+    new_qubit_props = []
+    for old_idx in layout:
+        new_qubit_props.append(original_backend.target.qubit_properties[old_idx])
+
+    # Create new backend
+    new_backend = customBackend(
+        name=f"{original_backend.name}_subset",
+        num_qubits=len(layout),
+        coupling_map=new_coupling_map,
+        dt=original_backend.dt,
+        basis_gates=original_backend.basis_gates,
+        qubit_properties=new_qubit_props,
+    )
+
+    for gate in original_backend.target:
+        for qubits, props in original_backend.target[gate].items():
+            # Skip if gate doesn't involve our qubits
+            if not all(q in layout for q in qubits):
+                continue
+            
+            # Remap qubit indices
+            new_qubits = tuple(old_to_new[q] for q in qubits[::-1])
+            if len(new_qubits) > 1 and new_qubits[0] > new_qubits[1]:
+                new_qubits = (new_qubits[1], new_qubits[0])
+            new_backend.target.update_instruction_properties(
+                gate, new_qubits, props
+    )
+            
+    return new_backend
+
 def generateBackends(backend_generator, noise: list[float] = [0.015, 0.03, 0.05]):
     for n in noise:
         backend = backend_generator(n)
@@ -348,6 +405,21 @@ def connected_subgraphs_of_size(G, k):
     for start in G.nodes():
         # initialize with single-node subset and its neighbors as frontier
         yield from extend({start}, set(G.neighbors(start)))
+
+def get_optimal_layouts(backend, n_qubits: int, properties: list[str], bools: list[bool]):
+    layouts = {}
+    for b in bools:
+        for prop in properties:
+            if prop == "2q-error":
+                continue
+            qubits, value = find_optimal_qubit_set(backend, n_qubits, get_average_property, prop, b)
+            layouts[prop + "_" + "min" if b  else "max"] = (qubits, value)
+        
+    if "2q-error" in properties:
+        qubits, value = find_optimal_qubit_set(backend, n_qubits, average_two_qubit_error, prop, b)
+        layouts["2q-error" + "_" + "min" if b  else "max"] = (qubits, value)
+
+    return layouts
 
 def find_optimal_qubit_set(backend, n_qubits: int, metric_func: callable, property: str = "", minimize: bool = True) -> tuple[list[int], float]:
     """
@@ -381,12 +453,12 @@ def find_optimal_qubit_set(backend, n_qubits: int, metric_func: callable, proper
             best_score = score
             best_qubits = subgraph.nodes()
     
-    return best_qubits, best_score
+    return list(best_qubits), best_score
 
 def get_average_property(backend, subgraph, property_name: str) -> float:
     qubits = subgraph.nodes()
     total_property = 0
-    for q in qubits:        
+    for q in qubits:
         total_property += backend.properties().qubit_property(q).get(property_name, (None,))[0]
     return total_property / len(qubits)
 
