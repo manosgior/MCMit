@@ -240,7 +240,8 @@ def add_parity_checks_already_mapped(circuit: QuantumCircuit, coupling_map: Coup
     
     return new_circ, True
 
-def add_parity_checks_greedy(circuit: QuantumCircuit, backend, max_attempts: int = 10):
+def add_parity_checks_greedy(circuit: QuantumCircuit, backend, max_attempts: int = 10, threshold: float = 0.3) -> QuantumCircuit:
+    print(circuit)
     initial_circuit = transpile(circuit, backend, optimization_level=3)
     initial_cx_count = count_two_qubit_gates(initial_circuit)
     
@@ -301,7 +302,7 @@ def add_parity_checks_greedy(circuit: QuantumCircuit, backend, max_attempts: int
                 best_circuit = test_circuit
         
         # If no acceptable solution found, stop
-        if best_circuit is None or best_cx_overhead > initial_cx_count * 0.3:  # 30% threshold
+        if best_circuit is None or best_cx_overhead > initial_cx_count * threshold:  # 30% threshold
             break
             
         # Accept this addition and continue

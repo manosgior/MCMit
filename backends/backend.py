@@ -324,37 +324,90 @@ def generateBackends(backend_generator, noise: list[float] = [0.015, 0.03, 0.05]
         backend = backend_generator(n)
         saveBackend(backend, "backends/QPUs/" + backend.name + str(n))
 
+def connected_subgraphs_of_size(G, k):
+    seen = set()
 
-def test(backend: str = "FezDQC"):
-    #bs = loadBackend("guadalupeDQC")
-    #bm = loadBackend("KyivDQC")
-    backend = loadBackend(backend)
+    def extend(subset, frontier):
+        if len(subset) == k:
+            key = tuple(sorted(subset))
+            if key not in seen:
+                seen.add(key)
+                yield G.subgraph(key)
+            return
 
-    qc = QuantumCircuit(5)
-    qc.h(0)
-    for i in range(1, 5):
-        qc.cx(i - 1, i)
+        # only consider frontier nodes greater than the minimum of subset
+        min_seed = min(subset)
+        for v in sorted(frontier):
+            if v <= min_seed:
+                continue
+            new_subset = subset | {v}
+            # expand frontier to include neighbors of v, then remove any in subset
+            new_frontier = (frontier | set(G.neighbors(v))) - new_subset
+            yield from extend(new_subset, new_frontier)
 
-    qc.measure_all()
+    for start in G.nodes():
+        # initialize with single-node subset and its neighbors as frontier
+        yield from extend({start}, set(G.neighbors(start)))
 
-    qc_t = transpile(qc, backend)
+def find_optimal_qubit_set(backend, n_qubits: int, metric_func: callable, property: str = "", minimize: bool = True) -> tuple[list[int], float]:
+    """
+    Finds a set of n connected qubits that optimize (minimize/maximize) a given metric.
+    
+    Args:
+        backend: Quantum backend
+        n_qubits: Number of qubits to find
+        metric_func: Function that takes a list of qubit indices and returns a float
+        minimize: If True, minimize the metric; if False, maximize
+        
+    Returns:
+        tuple[list[int], float]: Optimal qubit indices and corresponding metric value
+    """
+    coupling_map = backend.coupling_map
+    G = nx.Graph()
+    G.add_edges_from(coupling_map.get_edges())
 
-    print(qc_t)
+    subgraphs = connected_subgraphs_of_size(G, n_qubits)
+    
+    best_score = float('inf') if minimize else float('-inf')
+    best_qubits = None
+    
+    # Find all connected subgraphs of size n_qubits
+    for subgraph in subgraphs:
+        #qubits = subgraph.nodes()  # Convert set to list
+        score = metric_func(backend, subgraph, property)
+        
+        if (minimize and score < best_score) or \
+           (not minimize and score > best_score):
+            best_score = score
+            best_qubits = subgraph.nodes()
+    
+    return best_qubits, best_score
 
-#generateBackends(constructDQCSmall)
-#generateBackends(constructDQCMedium)
-#generateBackends(constructDQCLarge)
-#b = constructBackendSmall()
-#saveBackend(b, "backends/QPUs/Guadalupe")
+def get_average_property(backend, subgraph, property_name: str) -> float:
+    qubits = subgraph.nodes()
+    total_property = 0
+    for q in qubits:        
+        total_property += backend.properties().qubit_property(q).get(property_name, (None,))[0]
+    return total_property / len(qubits)
 
-#b = loadBackend("backends/GuadalupeDQC_0.015")
-#b2 = loadBackend("backends/KyivDQC_0.015")
-#b3 = loadBackend("backends/FezDQC_0.015")
-#b.plotGateProbDistribution()
-#b2.plotGateProbDistribution()
-#b3.plotGateProbDistribution()
-#print(b2.target)
-#b2.plotGateProbDistribution()
-
+def average_two_qubit_error(backend, subgraph, property_name: str) -> float:
+    """Returns average two-qubit gate error for given qubits"""
+    total_error = 0
+    count = 0
+    edges = subgraph.edges()
+    
+    # Check all pairs of qubits
+    for e in edges:
+        q1, q2 = e[0], e[1]
+        for gate in ['cz', 'ecr']:
+            if gate in backend.target:
+                props = backend.target[gate].get((q1, q2))
+                if props is None:
+                    props = backend.target[gate].get((q2, q1))
+                if props and props.error is not None:
+                    total_error += props.error
+                    count += 1
+    
+    return total_error / count if count > 0 else float('inf')
 
 

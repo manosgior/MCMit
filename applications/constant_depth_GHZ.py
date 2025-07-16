@@ -60,3 +60,26 @@ def create_constant_depth_ghz(n_qubits: int) -> QuantumCircuit:
     qc.measure_all()
  
     return qc
+
+def get_ghz_states(min: int = 5, max: int = 155) -> list[QuantumCircuit]:
+    """
+    Generate a list of constant-depth GHZ state circuits for a range of qubit counts.
+    
+    Args:
+        min (int): Minimum number of qubits.
+        max (int): Maximum number of qubits.
+        
+    Returns:
+        list[QuantumCircuit]: List of generated GHZ circuits.
+    """
+    assert min % 2 == 1 and min >=5, "Both min is odd and we ask for at least 5 qubits."
+
+    circuits = []
+    for n_qubits in range(min, max + 1, 2):
+        circuits.append(create_constant_depth_ghz(n_qubits))
+    
+    return circuits
+
+
+def get_perfect_ghz_distribution(ghz_state_size: int, shots: int) -> dict[str, int]:
+    return {'0' * ghz_state_size: shots / 2, '1' * ghz_state_size: shots / 2}
