@@ -31,7 +31,6 @@ def evaluate_layout_effect_on_fidelity_ghz(min_circuit_size: int, max_circuitsiz
     circuits = get_ghz_states(min_circuit_size, max_circuitsize)
 
     for c in circuits:
-        print(c)
         properties = ["T1", "T2", "readout_error", "2q-error"]
         bools = [True, False]
         layouts = get_optimal_layouts(backend, c.num_qubits, properties, bools)  
@@ -46,15 +45,11 @@ def evaluate_layout_effect_on_fidelity_ghz(min_circuit_size: int, max_circuitsiz
                 results = simulator.run(tqc, shots=shots).result()
                 counts = results.get_counts()
                 processed_counts = process_distribution(counts)
-                print(counts)
-                print(processed_counts)
                 fid = fidelity(processed_counts, get_perfect_ghz_distribution(c.num_qubits, shots))
                 fidelities.append(fid)
             
             avg_fidelity = np.mean(fidelities)
             fidelity_std = np.std(fidelities)
-            print(avg_fidelity)
-            exit()
 
             data = construct_data(
                 application="constant_depth_GHZ",
@@ -71,5 +66,5 @@ def evaluate_layout_effect_on_fidelity_ghz(min_circuit_size: int, max_circuitsiz
 
 
 backend = getRealEagleBackend()
-circuit_sizes = (7, 24)
+circuit_sizes = (5, 24)
 evaluate_layout_effect_on_fidelity_ghz(circuit_sizes[0], circuit_sizes[1], backend, num_reps=7, shots=8192)

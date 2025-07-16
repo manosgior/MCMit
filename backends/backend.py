@@ -411,14 +411,12 @@ def get_optimal_layouts(backend, n_qubits: int, properties: list[str], bools: li
     for b in bools:
         for prop in properties:
             if prop == "2q-error":
-                continue
-            qubits, value = find_optimal_qubit_set(backend, n_qubits, get_average_property, prop, b)
-            layouts[prop + "_" + "min" if b  else "max"] = (qubits, value)
+                qubits, value = find_optimal_qubit_set(backend, n_qubits, average_two_qubit_error, prop, b)
+                layouts["2q-error" + "_" + "min" if b  else "2q-error" + "_" + "max"] = (qubits, value)
+            else:
+                qubits, value = find_optimal_qubit_set(backend, n_qubits, get_average_property, prop, b)
+                layouts[prop + "_" + "min" if b  else "2q-error" + "_" + "max"] = (qubits, value)
         
-    if "2q-error" in properties:
-        qubits, value = find_optimal_qubit_set(backend, n_qubits, average_two_qubit_error, prop, b)
-        layouts["2q-error" + "_" + "min" if b  else "max"] = (qubits, value)
-
     return layouts
 
 def find_optimal_qubit_set(backend, n_qubits: int, metric_func: callable, property: str = "", minimize: bool = True) -> tuple[list[int], float]:

@@ -30,6 +30,7 @@ def create_constant_depth_ghz(n_qubits: int) -> QuantumCircuit:
         if i > 0:
             qc.cx(i, i-1)
  
+    qc.cx(-1, -2)  # Last CNOT to ensure the last qubit is entangled
 
     # Third layer: Measure odd-numbered qubits
     for i in range(1, n_qubits, 2):
