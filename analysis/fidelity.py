@@ -103,7 +103,8 @@ def getEigenValue(bitstring: str, mode: str):
 
 def calculateExpectationValue(counts: dict[str, int], shots: int = 0, mode: str = "sum"):
     ev = 0
-    shots = sum(counts.values())
+    if shots == 0:
+        shots = sum(counts.values())
 
     for bitstring, count in counts.items():
         if mode == "product":

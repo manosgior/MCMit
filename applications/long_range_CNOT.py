@@ -64,3 +64,36 @@ def get_dynamic_CNOT_circuit(num_qubit):
     qc.measure(-1, cr3[1])
 
     return qc
+
+
+def generate_long_range_cnots(max_length: int) -> list[QuantumCircuit]:
+    """
+    Generates a list of quantum circuits for long-range CNOT gates.
+    Each circuit has a control qubit at index 0 and a target qubit at index num_qubits-1.
+    The length of the chain increases from 3 to max_length.
+    
+    Args:
+        max_length: Maximum number of qubits in the chain.
+    
+    Returns:
+        List of QuantumCircuit objects for long-range CNOT gates.
+    """
+    circuits = []
+    for length in range(5, max_length + 1, 2):
+        qc = get_dynamic_CNOT_circuit(length)
+        circuits.append(qc)
+    
+    return circuits
+
+
+def get_perfect_distribution_long_range_cnot(shots: int) -> dict[str, int]:
+    """
+    Returns the perfect distribution for long-range CNOT circuits.
+    
+    Args:
+        shots (int): Number of shots for the distribution.
+        
+    Returns:
+        dict[str, int]: Perfect distribution dictionary.
+    """
+    return {'00': int(shots / 2), '11': int(shots / 2)}

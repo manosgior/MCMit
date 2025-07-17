@@ -81,6 +81,5 @@ def get_ghz_states(min: int = 5, max: int = 155) -> list[QuantumCircuit]:
     
     return circuits
 
-
 def get_perfect_ghz_distribution(ghz_state_size: int, shots: int) -> dict[str, int]:
     return {'0' * ghz_state_size: int(shots / 2), '1' * ghz_state_size: int(shots / 2)}
