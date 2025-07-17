@@ -415,7 +415,7 @@ def get_optimal_layouts(backend, n_qubits: int, properties: list[str], bools: li
                 layouts["2q-error" + "_" + "min" if b  else "2q-error" + "_" + "max"] = (qubits, value)
             else:
                 qubits, value = find_optimal_qubit_set(backend, n_qubits, get_average_property, prop, b)
-                layouts[prop + "_" + "min" if b  else "2q-error" + "_" + "max"] = (qubits, value)
+                layouts[prop + "_" + "min" if b  else prop + "_" + "max"] = (qubits, value)
         
     return layouts
 
