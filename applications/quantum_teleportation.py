@@ -4,7 +4,7 @@ from qiskit.quantum_info import Statevector, Pauli
 
 import numpy as np
 
-def create_teleportation_circuit(measurement_basis: str = 'X') -> QuantumCircuit:
+def create_teleportation_circuit(measurement_basis: str = 'Z') -> QuantumCircuit:
     """
     Creates a quantum circuit that implements quantum teleportation protocol.
     The circuit teleports the state of qubit 0 to qubit 2.
@@ -43,6 +43,9 @@ def create_teleportation_circuit(measurement_basis: str = 'X') -> QuantumCircuit
     with qc.if_test((cr1[0], 1)):  # If first measurement is 1
         qc.z(2)
 
+    qc.rz(2 * phi_z, 0).inverse()
+    qc.rx(2 * phi_x, 0).inverse()    
+    
     if measurement_basis == 'X':
         qc.h(2)
     elif measurement_basis == 'Y':
@@ -54,7 +57,7 @@ def create_teleportation_circuit(measurement_basis: str = 'X') -> QuantumCircuit
     
     return qc
 
-def create_repeated_teleportation_circuit(n_teleports: int = 1, measurement_basis: str = 'X') -> QuantumCircuit:
+def create_repeated_teleportation_circuit(n_teleports: int = 2, measurement_basis: str = 'Z') -> QuantumCircuit:
     """
     Creates a quantum circuit that implements multiple quantum teleportations.
     The state is teleported back and forth between qubits 0 and 2.
@@ -64,6 +67,7 @@ def create_repeated_teleportation_circuit(n_teleports: int = 1, measurement_basi
     Returns:
         QuantumCircuit: The teleportation circuit
     """
+    assert(n_teleports > 1), "Number of teleports must be greater than 1"
     # Create registers
     qr = QuantumRegister(3, 'q')  # 3 qubits: sender/receiver1, auxiliary, sender/receiver2
     cr1 = ClassicalRegister(2*n_teleports, 'c')  # 2 classical bits per teleportation
@@ -105,6 +109,9 @@ def create_repeated_teleportation_circuit(n_teleports: int = 1, measurement_basi
         qc.reset([source, 1])
         final_target = target
 
+    qc.rz(2 * phi_z, final_target).inverse()
+    qc.rx(2 * phi_x, final_target).inverse()
+
     if measurement_basis == 'X':
         qc.h(final_target)
     elif measurement_basis == 'Y':
@@ -116,7 +123,7 @@ def create_repeated_teleportation_circuit(n_teleports: int = 1, measurement_basi
     
     return qc
 
-def create_ladder_teleportation_circuit(n_teleports: int = 1, measurement_basis: str = 'X') -> QuantumCircuit:
+def create_ladder_teleportation_circuit(n_teleports: int = 1, measurement_basis: str = 'Z') -> QuantumCircuit:
     """
     Creates a quantum circuit that teleports the |i+> state across n_steps
     in a ladder fashion: 0 -> 2 -> 4 -> ... -> 2n.
@@ -127,6 +134,7 @@ def create_ladder_teleportation_circuit(n_teleports: int = 1, measurement_basis:
     Returns:
         QuantumCircuit: The complete teleportation ladder circuit.
     """
+    assert(n_teleports > 1), "Number of teleports must be greater than 1"
     num_qubits = 2 * n_teleports + 1
     qr = QuantumRegister(num_qubits, 'q')
     cr1 = ClassicalRegister(2 * n_teleports, 'c')  # 2 bits per teleportation step
@@ -165,6 +173,9 @@ def create_ladder_teleportation_circuit(n_teleports: int = 1, measurement_basis:
         with qc.if_test((cr1[2*step], 1)):
             qc.z(receiver)
 
+    qc.rz(2 * phi_z, -1).inverse()
+    qc.rx(2 * phi_x, -1).inverse()
+    
     if measurement_basis == 'X':
         qc.h(-1)
     elif measurement_basis == 'Y':
@@ -186,7 +197,7 @@ def generate_repeated_teleportations(max_reps: int, is_ladder: bool = False) -> 
         List[QuantumCircuit]: List of teleportation circuits
     """
     circuits = []
-    for i in range(1, max_reps + 1):
+    for i in range(2, max_reps + 1):
         if is_ladder:
             circuits.append(create_ladder_teleportation_circuit(i))
         else:
@@ -207,3 +218,6 @@ def get_perfect_expectation_value(circuit: QuantumCircuit) -> float:
 
 def get_perfect_expectation_value_hardcoded(shots: int = 0) -> float:
     return (0.7071067811865475, 0.4999999999999999, 0.5000000000000001)
+
+def get_perfect_distribution_teleportation(shots: int = 0) -> dict[str, int]:
+    return {"0": shots}
