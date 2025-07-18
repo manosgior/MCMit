@@ -4,7 +4,7 @@ from qiskit.quantum_info import Statevector, Pauli
 
 import numpy as np
 
-def create_teleportation_circuit() -> QuantumCircuit:
+def create_teleportation_circuit(measurement_basis: str = 'X') -> QuantumCircuit:
     """
     Creates a quantum circuit that implements quantum teleportation protocol.
     The circuit teleports the state of qubit 0 to qubit 2.
@@ -43,11 +43,18 @@ def create_teleportation_circuit() -> QuantumCircuit:
     with qc.if_test((cr1[0], 1)):  # If first measurement is 1
         qc.z(2)
 
+    if measurement_basis == 'X':
+        qc.h(2)
+    elif measurement_basis == 'Y':
+        qc.sdg(2)
+        qc.h(2)
+    elif measurement_basis == 'Z':
+        pass
     qc.measure(2, cr2)  # Measure the receiver qubit to see the teleported state
     
     return qc
 
-def create_repeated_teleportation_circuit(n_teleports: int = 1) -> QuantumCircuit:
+def create_repeated_teleportation_circuit(n_teleports: int = 1, measurement_basis: str = 'X') -> QuantumCircuit:
     """
     Creates a quantum circuit that implements multiple quantum teleportations.
     The state is teleported back and forth between qubits 0 and 2.
@@ -62,6 +69,7 @@ def create_repeated_teleportation_circuit(n_teleports: int = 1) -> QuantumCircui
     cr1 = ClassicalRegister(2*n_teleports, 'c')  # 2 classical bits per teleportation
     cr2 = ClassicalRegister(1, 'final')  # Final measurement of the receiver qubit
     qc = QuantumCircuit(qr, cr1, cr2)
+    final_target = -1
     
     # Create initial state to teleport
     phi_x = np.pi / 8
@@ -95,12 +103,20 @@ def create_repeated_teleportation_circuit(n_teleports: int = 1) -> QuantumCircui
         
         # Reset source and auxiliary qubits for next teleportation
         qc.reset([source, 1])
+        final_target = target
 
-    qc.measure(target, cr2)  # Measure the target qubit to see the teleported state
+    if measurement_basis == 'X':
+        qc.h(final_target)
+    elif measurement_basis == 'Y':
+        qc.sdg(final_target)
+        qc.h(final_target)
+    elif measurement_basis == 'Z':
+        pass
+    qc.measure(final_target, cr2)  # Measure the receiver qubit to see the teleported state
     
     return qc
 
-def create_ladder_teleportation_circuit(n_teleports: int = 1) -> QuantumCircuit:
+def create_ladder_teleportation_circuit(n_teleports: int = 1, measurement_basis: str = 'X') -> QuantumCircuit:
     """
     Creates a quantum circuit that teleports the |i+> state across n_steps
     in a ladder fashion: 0 -> 2 -> 4 -> ... -> 2n.
@@ -148,9 +164,14 @@ def create_ladder_teleportation_circuit(n_teleports: int = 1) -> QuantumCircuit:
             qc.x(receiver)
         with qc.if_test((cr1[2*step], 1)):
             qc.z(receiver)
-        #qc.x(receiver).c_if(cr1, 1 << (2 * step + 1))  # X if ent_a bit == 1
-        #qc.z(receiver).c_if(cr1, 1 << (2 * step))      # Z if sender bit == 1
 
+    if measurement_basis == 'X':
+        qc.h(-1)
+    elif measurement_basis == 'Y':
+        qc.sdg(-1)
+        qc.h(-1)
+    elif measurement_basis == 'Z':
+        pass
     qc.measure(-1, cr2)  # Measure the receiver qubit to see the teleported state
 
     return qc
@@ -175,8 +196,8 @@ def generate_repeated_teleportations(max_reps: int, is_ladder: bool = False) -> 
 def get_perfect_expectation_value(circuit: QuantumCircuit) -> float:
     state = Statevector(circuit)
     Z_op = Pauli('Z') # Pauli Z operator
-    Y_op = Pauli('Z') # Pauli Z operator
-    X_op = Pauli('Z') # Pauli Z operator
+    Y_op = Pauli('Y') # Pauli Z operator
+    X_op = Pauli('X') # Pauli Z operator
 
     z_expectation_value = state.expectation_value(Z_op)
     y_expectation_value = state.expectation_value(Y_op)
@@ -185,4 +206,4 @@ def get_perfect_expectation_value(circuit: QuantumCircuit) -> float:
     return (z_expectation_value, y_expectation_value, x_expectation_value)
 
 def get_perfect_expectation_value_hardcoded(shots: int = 0) -> float:
-    return 0.7071067811865475
+    return (0.7071067811865475, 0.4999999999999999, 0.5000000000000001)

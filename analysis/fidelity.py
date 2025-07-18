@@ -123,6 +123,9 @@ def calculateExpectationValue(counts: dict[str, int], shots: int = 0, mode: str 
     else:
         return ev / shots
 
+def getEVFidelityWithBasis(ev_noisy_x: float, ev_ideal_x: float, ev_noisy_y: float, ev_ideal_y: float, ev_noisy_z: float, ev_ideal_z: float):
+    return np.sqrt(abs(ev_noisy_x - ev_ideal_x)**2 + abs(ev_noisy_y - ev_ideal_y)**2 + abs(ev_noisy_z - ev_ideal_z)**2)
+
 def getEVFidelity(ev_ideal: float, ev_noisy: float):
     if ev_ideal != 0:
         return (abs(ev_ideal - ev_noisy) / ev_ideal)
