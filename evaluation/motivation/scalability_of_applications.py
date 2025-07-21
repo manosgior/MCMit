@@ -1,6 +1,7 @@
 from applications.constant_depth_GHZ import *
 from applications.quantum_teleportation import *
 from applications.long_range_CNOT import *
+from applications.qasm3_exporter import export_qasm3
 
 from backends.simulator import *
 from backends.backend import *
@@ -27,13 +28,6 @@ optimal_result_mapping = {
     "quantum_teleportation_ladder": get_perfect_distribution_teleportation,
     "long_range_CNOT": get_perfect_distribution_long_range_cnot
 }
-
-
-constant_depth_ghz = get_ghz_states(5, 11)
-teleportation_circuits_ladder = generate_repeated_teleportations(5, is_ladder=True)
-long_range_cnot_circuits = generate_long_range_cnots(13)
-
-backend = getRealEagleBackend()
 
 def evaluate_layout_effect_on_fidelity(circuits: list[QuantumCircuit], type: str, backend, num_reps: int = 5, shots: int = 8192, filename: str = 'evaluation/motivation/results/scalability_analysis.csv'):
     for j, c in enumerate(circuits):     
@@ -75,7 +69,22 @@ def evaluate_layout_effect_on_fidelity(circuits: list[QuantumCircuit], type: str
         df = pd.DataFrame([data])
         df.to_csv(filename, mode='a', header=not os.path.isfile(filename), index=False)
 
-evaluate_layout_effect_on_fidelity(constant_depth_ghz, "constant_depth_GHZ", backend, num_reps=5, shots=8192)
+ghz_circuit = create_constant_depth_ghz(5)
+teleportation_circuit = create_teleportation_circuit()
+long_range_cnot = create_dynamic_CNOT_circuit(5)
+
+export_qasm3(ghz_circuit, 'applications/qasm_files/constant_depth_ghz.qasm3')
+export_qasm3(teleportation_circuit, 'applications/qasm_files/quantum_teleportation.qasm3')
+export_qasm3(long_range_cnot, 'applications/qasm_files/long_range_CNOT.qasm3')
+
 exit()
+
+constant_depth_ghz = get_ghz_states(5, 11)
+teleportation_circuits_ladder = generate_repeated_teleportations(5, is_ladder=True)
+long_range_cnot_circuits = generate_long_range_cnots(13)
+
+backend = getRealEagleBackend()
+
+evaluate_layout_effect_on_fidelity(constant_depth_ghz, "constant_depth_GHZ", backend, num_reps=5, shots=8192)
 evaluate_layout_effect_on_fidelity(teleportation_circuits_ladder, "quantum_teleportation_ladder", backend, num_reps=5, shots=8192) 
 evaluate_layout_effect_on_fidelity(long_range_cnot_circuits, "long_range_CNOT", backend, num_reps=5, shots=8192)

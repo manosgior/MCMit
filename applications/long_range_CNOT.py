@@ -1,7 +1,7 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.classical import expr
 
-def get_dynamic_CNOT_circuit(num_qubit):
+def create_dynamic_CNOT_circuit(num_qubit):
     """
     (1) 1D chain of nearest neighbors
     (2) 0th qubit is the control, and the last qubit (num_qubit-1) is the target
@@ -80,7 +80,7 @@ def generate_long_range_cnots(max_length: int) -> list[QuantumCircuit]:
     """
     circuits = []
     for length in range(5, max_length + 1, 2):
-        qc = get_dynamic_CNOT_circuit(length)
+        qc = create_dynamic_CNOT_circuit(length)
         circuits.append(qc)
     
     return circuits

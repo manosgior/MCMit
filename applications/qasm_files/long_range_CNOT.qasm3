@@ -1,0 +1,26 @@
+OPENQASM 3.0;
+include "stdgates.inc";
+bit[1] cr1;
+bit[2] cr2;
+bit[2] cr3;
+qubit[5] q0;
+h q0[0];
+barrier q0[0], q0[1], q0[2], q0[3], q0[4];
+cx q0[0], q0[1];
+h q0[2];
+cx q0[2], q0[3];
+cx q0[1], q0[2];
+cx q0[3], q0[4];
+h q0[1];
+h q0[3];
+cr2[0] = measure q0[1];
+cr2[1] = measure q0[3];
+cr1[0] = measure q0[2];
+if (cr2[1] ^ cr2[0]) {
+  z q0[0];
+}
+if (cr1[0]) {
+  x q0[4];
+}
+cr3[0] = measure q0[0];
+cr3[1] = measure q0[4];
