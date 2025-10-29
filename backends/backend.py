@@ -43,14 +43,14 @@ def GuadalupeCouplingMap():
 
 def getRealNoiseModelsFromEagle():
     service = QiskitRuntimeService(instance="ibm-q/open/main")
-    backend = service.backend("ibm_kyiv")
+    backend = service.backend("ibm_brisbane")
     qubit_properties = [backend.qubit_properties(i) for i in range(backend.num_qubits)]
 
     return qubit_properties, backend.target
 
 def getRealResolutionTimeFromEagle():
     service = QiskitRuntimeService(instance="ibm-q/open/main")
-    backend = service.backend("ibm_kyiv")
+    backend = service.backend("ibm_brisbane")
 
     return backend.dt
 

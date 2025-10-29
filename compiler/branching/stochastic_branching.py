@@ -94,4 +94,5 @@ def compute_calibrations_from_backend(circuit: QuantumCircuit, backend, filename
 def fetch_calibrations_from_file(filename: str):
     mit = mthree.M3Mitigation()
     mit.cals_from_file(filename)
+    
     return mit.single_qubit_cals

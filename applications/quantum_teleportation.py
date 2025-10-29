@@ -43,8 +43,8 @@ def create_teleportation_circuit(measurement_basis: str = 'Z') -> QuantumCircuit
     with qc.if_test((cr1[0], 1)):  # If first measurement is 1
         qc.z(2)
 
-    qc.rz(2 * phi_z, 0).inverse()
-    qc.rx(2 * phi_x, 0).inverse()    
+    qc.rz(2 * phi_z, 2).inverse()
+    qc.rx(2 * phi_x, 2).inverse()    
     
     if measurement_basis == 'X':
         qc.h(2)
