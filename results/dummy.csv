@@ -1,0 +1,134 @@
+Benchmark,N,Method,Fidelity
+Constant-depth GHZ,5,Raw,0.9
+Constant-depth GHZ,5,Qiskit M3,1.0
+Constant-depth GHZ,5,MCMit,0.99
+Constant-depth GHZ,7,Raw,0.8144
+Constant-depth GHZ,7,Qiskit M3,0.9548
+Constant-depth GHZ,7,MCMit,0.98
+Constant-depth GHZ,9,Raw,0.7369
+Constant-depth GHZ,9,Qiskit M3,0.8355
+Constant-depth GHZ,9,MCMit,0.9758
+Constant-depth GHZ,11,Raw,0.6667
+Constant-depth GHZ,11,Qiskit M3,0.7486
+Constant-depth GHZ,11,MCMit,0.94
+Constant-depth GHZ,13,Raw,0.6033
+Constant-depth GHZ,13,Qiskit M3,0.6648
+Constant-depth GHZ,13,MCMit,0.93
+Constant-depth GHZ,15,Raw,0.5459
+Constant-depth GHZ,15,Qiskit M3,0.6184
+Constant-depth GHZ,15,MCMit,0.8925
+Constant-depth GHZ,17,Raw,0.4939
+Constant-depth GHZ,17,Qiskit M3,0.5551
+Constant-depth GHZ,17,MCMit,0.8594
+Constant-depth GHZ,19,Raw,0.4469
+Constant-depth GHZ,19,Qiskit M3,0.5242
+Constant-depth GHZ,19,MCMit,0.8194
+Constant-depth GHZ,21,Raw,0.4044
+Constant-depth GHZ,21,Qiskit M3,0.4749
+Constant-depth GHZ,21,MCMit,0.7244
+Constant-depth GHZ,23,Raw,0.3659
+Constant-depth GHZ,23,Qiskit M3,0.4318
+Constant-depth GHZ,23,MCMit,0.676
+Constant-depth GHZ,25,Raw,0.3311
+Constant-depth GHZ,25,Qiskit M3,0.3765
+Constant-depth GHZ,25,MCMit,0.6081
+Long-range CNOT,5,Qiskit M3,0.9738
+Long-range CNOT,5,MCMit,0.9928
+Long-range CNOT,7,Qiskit M3,0.9605
+Long-range CNOT,7,MCMit,0.9905
+Long-range CNOT,9,Qiskit M3,0.911
+Long-range CNOT,9,MCMit,0.9928
+Long-range CNOT,11,Qiskit M3,0.8985
+Long-range CNOT,11,MCMit,0.9928
+Long-range CNOT,13,Qiskit M3,0.8392
+Long-range CNOT,13,MCMit,0.9928
+Long-range CNOT,15,Qiskit M3,0.8308
+Long-range CNOT,15,MCMit,0.9765
+Long-range CNOT,17,Qiskit M3,0.8308
+Long-range CNOT,17,MCMit,0.9191
+Long-range CNOT,19,Qiskit M3,0.8161
+Long-range CNOT,19,MCMit,0.8348
+Long-range CNOT,21,Qiskit M3,0.784
+Long-range CNOT,21,MCMit,0.8334
+Long-range CNOT,23,Qiskit M3,0.7442
+Long-range CNOT,23,MCMit,0.779
+Long-range CNOT,25,Qiskit M3,0.7321
+Long-range CNOT,25,MCMit,0.759
+Long-range CNOT,5,Raw,0.8956
+Long-range CNOT,7,Raw,0.9032
+Long-range CNOT,9,Raw,0.8717
+Long-range CNOT,11,Raw,0.8466
+Long-range CNOT,13,Raw,0.784
+Long-range CNOT,15,Raw,0.7865
+Long-range CNOT,17,Raw,0.749
+Long-range CNOT,19,Raw,0.7292
+Long-range CNOT,21,Raw,0.7167
+Long-range CNOT,23,Raw,0.6784
+Long-range CNOT,25,Raw,0.6808
+Ladder teleportation,2,Qiskit M3,0.9227
+Ladder teleportation,2,MCMit,0.9673
+Ladder teleportation,3,Qiskit M3,0.8737
+Ladder teleportation,3,MCMit,0.9457
+Ladder teleportation,4,Qiskit M3,0.8737
+Ladder teleportation,4,MCMit,0.9387
+Ladder teleportation,5,Qiskit M3,0.8333
+Ladder teleportation,5,MCMit,0.9218
+Ladder teleportation,6,Qiskit M3,0.7927
+Ladder teleportation,6,MCMit,1.0
+Ladder teleportation,7,Qiskit M3,0.7372
+Ladder teleportation,7,MCMit,0.9183
+Ladder teleportation,8,Qiskit M3,0.7205
+Ladder teleportation,8,MCMit,0.8867
+Ladder teleportation,9,Qiskit M3,0.6873
+Ladder teleportation,9,MCMit,0.8411
+Ladder teleportation,10,Qiskit M3,0.6157
+Ladder teleportation,10,MCMit,0.8021
+Ladder teleportation,11,Qiskit M3,0.6157
+Ladder teleportation,11,MCMit,0.7337
+Ladder teleportation,12,Qiskit M3,0.5824
+Ladder teleportation,12,MCMit,0.6939
+Ladder teleportation,2,Raw,0.9128
+Ladder teleportation,3,Raw,0.8691
+Ladder teleportation,4,Raw,0.8309
+Ladder teleportation,5,Raw,0.7624
+Ladder teleportation,6,Raw,0.6071
+Ladder teleportation,7,Raw,0.597
+Ladder teleportation,8,Raw,0.5663
+Ladder teleportation,9,Raw,0.5726
+Ladder teleportation,10,Raw,0.5585
+Ladder teleportation,11,Raw,0.5708
+Ladder teleportation,12,Raw,0.5486
+Repeated teleportation,5,Raw,0.95
+Repeated teleportation,5,Qiskit M3,0.9953
+Repeated teleportation,5,MCMit,0.9823
+Repeated teleportation,7,Raw,0.8947
+Repeated teleportation,7,Qiskit M3,0.9483
+Repeated teleportation,7,MCMit,0.9634
+Repeated teleportation,9,Raw,0.8426
+Repeated teleportation,9,Qiskit M3,0.8861
+Repeated teleportation,9,MCMit,0.9543
+Repeated teleportation,11,Raw,0.7935
+Repeated teleportation,11,Qiskit M3,0.8656
+Repeated teleportation,11,MCMit,0.9334
+Repeated teleportation,13,Raw,0.7473
+Repeated teleportation,13,Qiskit M3,0.8149
+Repeated teleportation,13,MCMit,0.8587
+Repeated teleportation,15,Raw,0.7038
+Repeated teleportation,15,Qiskit M3,0.7682
+Repeated teleportation,15,MCMit,0.8278
+Repeated teleportation,17,Raw,0.6628
+Repeated teleportation,17,Qiskit M3,0.7193
+Repeated teleportation,17,MCMit,0.8278
+Repeated teleportation,19,Raw,0.6242
+Repeated teleportation,19,Qiskit M3,0.6712
+Repeated teleportation,19,MCMit,0.7102
+Repeated teleportation,21,Raw,0.5878
+Repeated teleportation,21,Qiskit M3,0.6015
+Repeated teleportation,21,MCMit,0.6629
+Repeated teleportation,23,Raw,0.5536
+Repeated teleportation,23,Qiskit M3,0.5719
+Repeated teleportation,23,MCMit,0.6308
+Repeated teleportation,25,Raw,0.5214
+Repeated teleportation,25,Qiskit M3,0.5345
+Repeated teleportation,25,MCMit,0.6308
+

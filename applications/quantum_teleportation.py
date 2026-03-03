@@ -187,7 +187,7 @@ def create_ladder_teleportation_circuit(n_teleports: int = 1, measurement_basis:
 
     return qc
 
-def generate_repeated_teleportations(max_reps: int, is_ladder: bool = False) -> list[QuantumCircuit]:
+def generate_repeated_teleportations(max_reps: int, step: int = 1, is_ladder: bool = False) -> list[QuantumCircuit]:
     """
     Generates a list of quantum circuits for repeated teleportation.
     
@@ -197,7 +197,7 @@ def generate_repeated_teleportations(max_reps: int, is_ladder: bool = False) -> 
         List[QuantumCircuit]: List of teleportation circuits
     """
     circuits = []
-    for i in range(2, max_reps + 1):
+    for i in range(2, max_reps + 1, step):
         if is_ladder:
             circuits.append(create_ladder_teleportation_circuit(i))
         else:
