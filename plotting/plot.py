@@ -8,9 +8,11 @@ from plotting.utils import *
 
 # --- Configuration ---
 #csv_filename = 'results/feedbacklatency.csv'
-csv_filename = 'results/dummy.csv'
+#csv_filename = 'results/dummy.csv'
+csv_filename = 'results/mcm_latency.csv'
 #output_image_filename = 'benchmark_fidelity.pdf'
-output_image_filename = 'software_performance.pdf'
+#output_image_filename = 'software_performance.pdf'
+output_image_filename = 'mcm_impact.pdf'
 
 
 x_axes = [
@@ -34,17 +36,29 @@ benchmarks = (df['Benchmark'].unique()) # Sort for consistent order
 num_benchmarks = len(benchmarks)
 
 
-def plot_multiple():
+def plot_methods_comparison(
+    thesis: bool = True,
+    csv_filename: str = 'results/dummy.csv',
+    output_filename: str = 'software_performance.pdf',
+):
+    """Raw vs MCMit vs Qiskit M3 across all four benchmarks (1x4)."""
     methods_to_plot = ['Raw', 'MCMit', 'Qiskit M3'] # Order of bars
-    #methods_to_plot = ['Qubic', 'MCMit']
-    #methods_to_plot = ['250ns', '500ns', '750ns', '1000ns']
     method_colors = sns.color_palette("pastel", len(methods_to_plot)) # Example color palette
-    
+
+    df = pd.read_csv(csv_filename)
+    benchmarks = df['Benchmark'].unique()
+
+    y_limits = (0, 1.1)
+
     nrows = 1
-    ncols = num_benchmarks
+    ncols = 4
 
     # Create figure and axes for subplots
-    fig, axes = plt.subplots(nrows, ncols, figsize=(2.05 * WIDE_FIGSIZE, HEIGHT_FIGSIZE), sharey=True)
+    # Wide-and-short 1x4 row, matching the QEC figures (plot_qec.py)
+    THESIS_SIZE = (WIDE_FIGSIZE * 2.8, HEIGHT_FIGSIZE * 1.3)
+    NORMAL_SIZE = (WIDE_FIGSIZE, HEIGHT_FIGSIZE)
+    figsize = THESIS_SIZE if thesis else NORMAL_SIZE
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharey=True)
     axes_flat = axes.flatten() # Flatten the 2D array of axes for easy iteration
 
     # --- Iterate Through Benchmarks and Plot on Subplots ---
@@ -59,21 +73,17 @@ def plot_multiple():
 
         # Get unique N values and indices for filtering
         n_values = sorted(df_bench['N'].unique())
-        print(benchmark)
-        print(len(n_values))
         indices_to_keep = list(range(0, len(n_values), 2))  # Every other index
         n_values = [n_values[i] for i in indices_to_keep]
-        print((indices_to_keep))
+
         # --- Prepare data for grouped bars ---
         plot_data = {}
         for method in methods_to_plot:
             method_data = df_bench[df_bench['Method'] == method].sort_values('N')
             # Filter fidelities to match n_values
             all_fidelities = method_data['Fidelity'].tolist()
-            print(method)
-            print(len(all_fidelities))
             fidelities = [all_fidelities[i] for i in indices_to_keep]
-            
+
             plot_data[method] = fidelities
 
         # --- Plotting Setup for subplot ---
@@ -84,13 +94,11 @@ def plot_multiple():
 
         # --- Create Bars for Each Method on the current axis 'ax' ---
         for j, (method, fidelities) in enumerate(plot_data.items()):
-            print(len(fidelities))
-            print(len(x))
             offset = width * multiplier
-            rects = ax.bar(x + offset, 
-                fidelities, 
-                width, 
-                label=method, 
+            rects = ax.bar(x + offset,
+                fidelities,
+                width,
+                label=method,
                 color=method_colors[j],
                 hatch=code_hatches[j % len(code_hatches)],
                 edgecolor='black')
@@ -98,39 +106,143 @@ def plot_multiple():
             multiplier += 1
 
         # --- Add Labels and Title for the subplot ---
-        #ax.set_ylabel('Fidelity')
         ax.set_xlabel(x_axes[i])
-        #ax.set_xlabel("Number of instances")
-        #ax.set_xlabel('Number of teleportation steps')
         ax.set_title(f'({chr(97 + i)}) {benchmark}', fontsize=12, fontweight="bold") # Add (a), (b), etc.
         ax.set_xticks(x + width * (len(methods_to_plot) - 1) / 2, n_values)
-        #ax.legend(loc="lower left")
-        ax.set_ylim(0, 1.0)
+        ax.set_ylim(*y_limits)
 
-    axes[0].set_ylabel('Fidelity')
-    plt.subplots_adjust(left=0.05, right=0.9, bottom=0.25, top=0.75, wspace=0.05)
+    axes_flat[0].set_ylabel('Fidelity')
+
+    # Reserve room at top for the "Higher is better" note and at bottom for the legend
+    plt.subplots_adjust(top=0.80, bottom=0.30, wspace=0.1)
 
     plt.text(
-        0.5, 0.92, 
+        0.5, 0.97,
         "Higher is better ↑",
         transform=fig.transFigure,
-        fontsize=12, fontweight="bold", color="blue",
+        fontsize=14, fontweight="bold", color="blue",
         va="center", ha="center"
     )
 
-    handles, labels = axes[0].get_legend_handles_labels()
+    handles, labels = axes_flat[0].get_legend_handles_labels()
     fig.legend(
-       handles, labels,
-       loc="right",
-       bbox_to_anchor=(1, 0.5),
-        fontsize=10,
-        #frameon=False,
-        ncol=1,
+        handles, labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.04),
+        fontsize=12,
+        frameon=False,
+        ncol=10,
         columnspacing=0.7
     )
-    #plt.tight_layout() # Adjust subplot spacing
-    plt.savefig(output_image_filename, dpi=600)
-    print(f"Saved combined plot: {output_image_filename}")
+
+    plt.savefig(output_filename, dpi=600, bbox_inches='tight')
+    print(f"Saved combined plot: {output_filename}")
+    plt.close(fig) # Close the figure
+
+    print("\nPlotting complete.")
+
+
+def plot_latency_impact(
+    thesis: bool = True,
+    csv_filename: str = 'results/mcm_latency.csv',
+    output_filename: str = 'mcm_impact.pdf',
+):
+    """Feedback-latency sweep (250ns - 1000ns) across two benchmarks (1x2)."""
+    methods_to_plot = ['250ns', '500ns', '750ns', '1000ns']
+    method_colors = sns.color_palette("pastel", len(methods_to_plot)) # Example color palette
+
+    df = pd.read_csv(csv_filename)
+    benchmarks = df['Benchmark'].unique()
+
+    y_limits = (0.7, 1.01)
+
+    nrows = 1
+    ncols = 2
+
+    # Create figure and axes for subplots
+    # Wide-and-short 1x2 row (half the width of the 1x4 methods figure)
+    THESIS_SIZE = (WIDE_FIGSIZE * 1.4, HEIGHT_FIGSIZE * 1.3)
+    NORMAL_SIZE = (WIDE_FIGSIZE, HEIGHT_FIGSIZE)
+    figsize = THESIS_SIZE if thesis else NORMAL_SIZE
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharey=True)
+    axes_flat = axes.flatten() # Flatten the 2D array of axes for easy iteration
+
+    # --- Iterate Through Benchmarks and Plot on Subplots ---
+    for i, benchmark in enumerate(benchmarks):
+        ax = axes_flat[i] # Select the current subplot axis
+
+        # Filter data for the current benchmark
+        df_bench = df[df['Benchmark'] == benchmark].sort_values('N')
+        df_bench.columns = df_bench.columns.str.strip()
+        df_bench['Method'] = df_bench['Method'].astype(str).str.strip()
+        df_bench['Benchmark'] = df_bench['Benchmark'].astype(str).str.strip()
+
+        # Get unique N values and indices for filtering
+        n_values = sorted(df_bench['N'].unique())
+        indices_to_keep = list(range(0, len(n_values), 2))  # Every other index
+        n_values = [n_values[i] for i in indices_to_keep]
+
+        # --- Prepare data for grouped bars ---
+        plot_data = {}
+        for method in methods_to_plot:
+            method_data = df_bench[df_bench['Method'] == method].sort_values('N')
+            # Filter fidelities to match n_values
+            all_fidelities = method_data['Fidelity'].tolist()
+            fidelities = [all_fidelities[i] for i in indices_to_keep]
+
+            plot_data[method] = fidelities
+
+        # --- Plotting Setup for subplot ---
+        group_width = 0.5
+        x = np.arange(len(n_values)) * group_width  # Label locations
+        width = group_width / (len(methods_to_plot) + 1)  # Width of the bars
+        multiplier = 0
+
+        # --- Create Bars for Each Method on the current axis 'ax' ---
+        for j, (method, fidelities) in enumerate(plot_data.items()):
+            offset = width * multiplier
+            rects = ax.bar(x + offset,
+                fidelities,
+                width,
+                label=method,
+                color=method_colors[j],
+                hatch=code_hatches[j % len(code_hatches)],
+                edgecolor='black')
+            #ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=8)
+            multiplier += 1
+
+        # --- Add Labels and Title for the subplot ---
+        ax.set_xlabel(x_axes[i])
+        ax.set_title(f'({chr(97 + i)}) {benchmark}', fontsize=12, fontweight="bold") # Add (a), (b), etc.
+        ax.set_xticks(x + width * (len(methods_to_plot) - 1) / 2, n_values)
+        ax.set_ylim(*y_limits)
+
+    axes_flat[0].set_ylabel('Fidelity')
+
+    # Reserve room at top for the "Higher is better" note and at bottom for the legend
+    plt.subplots_adjust(top=0.80, bottom=0.30, wspace=0.1)
+
+    plt.text(
+        0.5, 0.95,
+        "Higher is better ↑",
+        transform=fig.transFigure,
+        fontsize=14, fontweight="bold", color="blue",
+        va="center", ha="center"
+    )
+
+    handles, labels = axes_flat[0].get_legend_handles_labels()
+    fig.legend(
+        handles, labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.02),
+        fontsize=12,
+        frameon=False,
+        ncol=10,
+        columnspacing=0.7
+    )
+
+    plt.savefig(output_filename, dpi=600, bbox_inches='tight')
+    print(f"Saved combined plot: {output_filename}")
     plt.close(fig) # Close the figure
 
     print("\nPlotting complete.")
@@ -211,10 +323,6 @@ def plot_single(xlabel: str):
     print("\nPlotting complete.")
 
 
-#plot_single('State length (# qubits)')
-#plot_multiple()
-
-
 def plot_feedback_impact_4panel(
     csv_16q: str = 'results/feedbacklatency.csv',
     csv_32q: str = 'results/decoherence_32q.csv',
@@ -250,16 +358,24 @@ def plot_feedback_impact_4panel(
 
     PANELS = [
         ('Constant-depth GHZ', df16, '16q'),
+        ('Long-range CNOT',    df16, '16q'),        
         ('Constant-depth GHZ', df32, '32q'),
-        ('Long-range CNOT',    df16, '16q'),
         ('Long-range CNOT',    df32, '32q'),
     ]
 
-    fig, axes = plt.subplots(1, 4,
-                             figsize=(4 * 2.7, HEIGHT_FIGSIZE - 1),
-                             sharey=True)
+    TEXT_WIDTH = 10
+    THESIS_SIZE = (TEXT_WIDTH, TEXT_WIDTH * 0.4)
+    fig, axes = plt.subplots(2, 2,
+                             figsize=THESIS_SIZE,
+                             sharey=True, sharex=True)
 
     # ── draw each panel ───────────────────────────────────────────────────────
+    axes = axes.flatten()
+    axes[0].set_ylabel('Fidelity')
+    axes[2].set_ylabel('Fidelity')
+    axes[2].set_xlabel('Number of instances')
+    axes[3].set_xlabel('Number of instances')
+
     for idx, (bench, df, qubit_label) in enumerate(PANELS):
         ax    = axes[idx]
         label = chr(97 + idx)      # 'a', 'b', 'c', 'd'
@@ -293,26 +409,26 @@ def plot_feedback_impact_4panel(
                     ax.plot(xi, 0.02, marker='x', color='black',
                             markersize=5, markeredgewidth=1.5, zorder=5)
 
-        ax.set_title(f'({label}) {bench} ({qubit_label})',
-                     fontsize=9, fontweight='bold')
-        ax.set_xlabel('Number of instances', fontsize=8)
+        ax.set_title(f'({label}) {bench} ({qubit_label})', fontweight='bold')
+        
         ax.set_xticks(x + width * (len(methods_to_plot) - 1) / 2, n_values,
                       fontsize=7, rotation=0)
         ax.set_ylim(0, 1.0)
         ax.tick_params(axis='y', labelsize=8)
+        #ax.set_ylabel('Fidelity', fontsize=10)
         # Legend only on the first panel
         if idx == 0:
             ax.legend(loc='upper right', fontsize=8)
 
-    axes[0].set_ylabel('Fidelity', fontsize=10)
+    
+    #axes[0].set_xlabel('Number of Instances')
 
-
-    plt.text(0.5, 1.1, "Higher is better ↑",
+    plt.text(0.5, 0.95, "Higher is better ↑",
              transform=fig.transFigure,
-             fontsize=9, fontweight='bold', color='blue',
+             fontsize=14, fontweight='bold', color='blue',
              va='top', ha='center')
 
-    plt.subplots_adjust(left=0.07, right=0.99, bottom=0.15, top=0.82, wspace=0.08)
+    plt.subplots_adjust(left=0.1, right=0.99, bottom=0.20, top=0.82, wspace=0.08)
     plt.savefig(output, dpi=600, bbox_inches='tight')
     print(f"Saved: {output}")
     plt.close(fig)
@@ -335,8 +451,9 @@ def plot_feedback_impact_4panel(
                   f"avg={sum(ratios)/len(ratios):.3f}x  "
                   f"max={max(ratios):.3f}x  (N={n_values[ratios.index(max(ratios))]})")
 
-
-plot_feedback_impact_4panel()
+plot_methods_comparison()
+plot_latency_impact()
+#plot_feedback_impact_4panel()
 
 
 
