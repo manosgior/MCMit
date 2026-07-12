@@ -1,8 +1,12 @@
 from typing import List, Tuple, Dict, Optional
 from copy import deepcopy
 
-from QuState import QubitState, QubitStateOrTop, EPS
-from util.ActivationState import *
+if __package__:
+    from .QuState import QubitState, QubitStateOrTop, EPS
+    from .util.ActivationState import *
+else:
+    from QuState import QubitState, QubitStateOrTop, EPS
+    from util.ActivationState import *
 
 class UnionTable:
     def __init__(self, n_qubits: int):
@@ -166,29 +170,9 @@ class UnionTable:
 
         return (ActivationState.SOMETIMES if not minimized else ActivationState.UNKNOWN), minimized
 
-    # TODO: The behavior of the following function should change.
-    #       After the qubit ind is set to 0, the other qubits in the state should be set to top
     def reset_state(self, qubit: int) -> None:
-        reg = self.qu_reg[qubit]
-        if reg.is_top() or self.purity_test(qubit):
-            self.qu_reg[qubit] = QubitStateOrTop(QubitState(1))
-            return
-
-        qs = reg.get_qubit_state()
-        idx = self.index_in_state(qubit)
-        new_qs = QubitState(qs.get_n_qubits())
-        new_qs.clear()
-
-        for key, amp in qs.state.items():
-            if not key[idx]:
-                new_qs.state[key] = amp
-
-        new_qs.remove_zero_entries()
-        new_qs.normalize()
-
-        for i, r in enumerate(self.qu_reg):
-            if r.is_qubit_state() and id(r.get_qubit_state()) == id(qs):
-                self.qu_reg[i] = QubitStateOrTop(new_qs)
+        self.set_top(qubit)
+        self.qu_reg[qubit] = QubitStateOrTop(QubitState(1))
 
     def separate(self, qubit: int) -> None:
         reg = self.qu_reg[qubit]
@@ -212,7 +196,7 @@ class UnionTable:
             # Remove the idx-th bit to form the reduced key
             reduced = tuple(b for i, b in enumerate(key) if i != idx)
 
-            # Only set if not present OR present as exact zero (to mirror C++'s == 0 check)
+            # Only set if not present OR present as exact zero
             if (reduced not in new_rest.state) or (new_rest.state[reduced] == 0):
                 denom = alpha if (key[idx] is False) else beta
                 new_rest.state[reduced] = value / denom

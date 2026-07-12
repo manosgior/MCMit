@@ -11,11 +11,18 @@ from functools import reduce
 
 import numpy as np
 
-from UnionTable import UnionTable
-from util.ActivationState import ActivationState
-from util.BitState import BitState
-from util.ProbabilisticGate import ProbabilisticGate, BigProbabilisticGate
-from SimplifyCondition import SimplifyCondition
+if __package__:
+    from .UnionTable import UnionTable
+    from .util.ActivationState import ActivationState
+    from .util.BitState import BitState
+    from .util.ProbabilisticGate import ProbabilisticGate
+    from .SimplifyCondition import SimplifyCondition
+else:
+    from UnionTable import UnionTable
+    from util.ActivationState import ActivationState
+    from util.BitState import BitState
+    from util.ProbabilisticGate import ProbabilisticGate
+    from SimplifyCondition import SimplifyCondition
 import random
 
 __all__ = ["ConstantPropagation"]
@@ -58,18 +65,19 @@ IF_ELSE_NAME = "if_else"
 # ConstantPropagation main class
 class ConstantPropagation:
     """Run the *constant-propagation* analysis/optimisation on a circuit."""
-
-    MAX_AMPLITUDES: int = 32
+    DEFAULT_MAX_AMPLITUDES: int = 1024
+    DEFAULT_MAX_ENT_GROUP_SIZE: int = 16
     
     @classmethod
-    def _propagate(cls, circuit: QuantumCircuit, max_amplitudes: int | None = None, max_ent_group_size = 1, table: UnionTable | None = None) -> Tuple[UnionTable, QuantumCircuit]:
-        max_amplitudes = max_amplitudes or cls.MAX_AMPLITUDES
+    def _propagate(cls, circuit: QuantumCircuit, max_amplitudes: int | None = None, max_ent_group_size: int = DEFAULT_MAX_ENT_GROUP_SIZE, table: UnionTable | None = None) -> Tuple[UnionTable, QuantumCircuit]:
+        if max_amplitudes is None:
+            max_amplitudes = cls.DEFAULT_MAX_AMPLITUDES
 
         clbit_states: dict[Clbit, BitState] = {}
         table = table or UnionTable(circuit.num_qubits)
 
         # Prepare new circuit
-        new_circ = QuantumCircuit(circuit.qubits, circuit.clbits)
+        new_circ = QuantumCircuit(*circuit.qregs, *circuit.cregs)
 
         # Walk through instructions
         for inst in circuit.data:
@@ -113,10 +121,10 @@ class ConstantPropagation:
                         inst = rot.to_instruction()
                         new_circ.append(inst, qargs)
                         # Append probabilistic gate
-                        prb_gate = ProbabilisticGate(XGate(), _prob_meas_1, cargs[0])
+                        prb_gate = ProbabilisticGate(_prob_meas_1, [(XGate(), [0])], [], 1, cargs[0])
                         new_circ.append(prb_gate, qargs)
 
-                        clbit_states[cargs[0]] = BitState(_prob_meas_1)
+                        clbit_states[cargs[0]] = BitState.NOT_KNOWN
                         table.separate(ind)   
                         table.set_top(ind)
                     elif _prob_meas_0 == 1.0:
@@ -124,28 +132,52 @@ class ConstantPropagation:
                     else:
                         clbit_states[cargs[0]] = BitState.ONE
                 elif table[ind].is_qubit_state() and table[ind].get_qubit_state().get_n_qubits() <= max_ent_group_size:
-                    state_vector =  table[ind].get_qubit_state().to_state_vector()
+                    state = table[ind].get_qubit_state()
+                    idx = table.index_in_state(ind)
+                    prob_meas_1 = state.probability_measure_one(idx)
+
+                    targets = table.qubits_in_state(state)
+                    targets_rest = [q for q in targets if q != ind]
+                    target_pos = {q: i for i, q in enumerate(targets)}
+
+                    state_vector = state.to_state_vector()
                     rot = cls._synthesize_rotation(state_vector, True)
                     inst = rot.to_instruction()
-
-                    targets = table.qubits_in_state(table[ind].get_qubit_state())
                     new_circ.append(inst, targets)
-                    
-                    state = table[ind].get_qubit_state()
-                    probs_big_prob_gate = []
-                    gates_ind_big_prob_gate = []
-                    for k, v in state:
-                        gates_ind_big_prob_gate_curr = []
-                        i = 0
-                        probs_big_prob_gate.append(abs(v)**2)
-                        for kk in k:
-                            if kk:
-                                gates_ind_big_prob_gate_curr.append((XGate(), [targets[i]]))
-                            i += 1
-                        gates_ind_big_prob_gate.append(gates_ind_big_prob_gate_curr)
 
-                    big_prob_gate = BigProbabilisticGate(probs_big_prob_gate, gates_ind_big_prob_gate, len(targets), cargs[0])
-                    new_circ.append(big_prob_gate, targets)
+                    inst_if_one = []
+                    inst_if_zero = []
+
+                    if targets_rest:
+                        n_rest = len(targets_rest)
+                        vec0 = np.zeros(1 << n_rest, dtype=complex)
+                        vec1 = np.zeros(1 << n_rest, dtype=complex)
+
+                        for key, amp in state:
+                            rest_key = tuple(b for i, b in enumerate(key) if i != idx)
+                            rest_idx = sum((1 << i) if bit else 0 for i, bit in enumerate(rest_key))
+                            if key[idx]:
+                                vec1[rest_idx] += amp
+                            else:
+                                vec0[rest_idx] += amp
+
+                        rot0 = cls._synthesize_rotation(vec0, False)
+                        rot1 = cls._synthesize_rotation(vec1, False)
+
+                        rest_positions = [target_pos[q] for q in targets_rest]
+                        inst_if_zero.append((rot0.to_instruction(), rest_positions))
+                        inst_if_one.append((rot1.to_instruction(), rest_positions))
+
+                    inst_if_one.append((XGate(), [target_pos[ind]]))
+
+                    prb_gate = ProbabilisticGate(
+                        prob_meas_1,
+                        inst_if_one,
+                        inst_if_zero,
+                        len(targets),
+                        cargs[0],
+                    )
+                    new_circ.append(prb_gate, targets)
 
                     table.set_top(ind)
                     clbit_states[cargs[0]] = BitState.NOT_KNOWN
@@ -157,44 +189,50 @@ class ConstantPropagation:
 
             if name_lc == RESET_NAME:
                 ind = q_indices[0]
-                if not table.purity_test(ind):
-                    if table[ind].is_qubit_state() and table[ind].get_qubit_state().get_n_qubits() <= max_ent_group_size:
-                        # Perform rotation from the current state to |0...0>
-                        state_vector =  table[ind].get_qubit_state().to_state_vector()
-                        rot = cls._synthesize_rotation(state_vector, True)
-                        inst = rot.to_instruction()
-                        new_circ.append(inst, qargs)
-                        
-                        # Reset ind-th qubit
-                        table.reset_state(ind)
-
-                        # Add gates to perform rotation from state |0...0> to the state before reset where the ind-qubit is |0>
-                        state_vector =  table[ind].get_qubit_state().to_state_vector()
-                        rot = cls._synthesize_rotation(state_vector, False)
-                        inst = rot.to_instruction()
-                        new_circ.append(inst, qargs)
-                        
-                        for q in table.qubits_in_state(table[ind].get_qubit_state()):
-                            table.separate(q)
-                    else:
-                        table.reset_state(ind)
-                        for q in table.qubits_in_state(table[ind].get_qubit_state()):
-                            table.separate(q)
-                        new_circ.append(instr, qargs, cargs)
-
-                elif table[ind].is_qubit_state():
+                if table.purity_test(ind) and table[ind].is_qubit_state():
                     _prob_meas_0 = table[ind].get_qubit_state().probability_measure_zero(table.index_in_state(ind))
                     _prob_meas_1 = table[ind].get_qubit_state().probability_measure_one(table.index_in_state(ind))
                     if _prob_meas_1 == 1.0: # Qubit is in the state |1>
                         new_circ.append(XGate(), qargs, cargs) # Apply X(ind) -> |0>
                     elif _prob_meas_0 != 1.0 and _prob_meas_1 != 1.0: 
-                        state_vector =  table[ind].get_qubit_state().to_state_vector()
-                        rot = cls._synthesize_rotation(state_vector, True)
-                        inst = rot.to_instruction()
-                        new_circ.append(inst, qargs)
-                
+                        state = table[ind].get_qubit_state()
+                        if state.get_n_qubits() <= max_ent_group_size:
+                            idx = table.index_in_state(ind)
+
+                            targets = table.qubits_in_state(state)
+                            targets_rest = [q for q in targets if q != ind]
+
+                            state_vector = state.to_state_vector()
+                            rot = cls._synthesize_rotation(state_vector, True)
+                            inst = rot.to_instruction()
+                            new_circ.append(inst, targets)
+
+                            if targets_rest:
+                                n_rest = len(targets_rest)
+                                vec0 = np.zeros(1 << n_rest, dtype=complex)
+                                vec1 = np.zeros(1 << n_rest, dtype=complex)
+
+                                for key, amp in state:
+                                    rest_key = tuple(b for i, b in enumerate(key) if i != idx)
+                                    rest_idx = sum((1 << i) if bit else 0 for i, bit in enumerate(rest_key))
+                                    if key[idx]:
+                                        vec1[rest_idx] += amp
+                                    else:
+                                        vec0[rest_idx] += amp
+
+                                rot0 = cls._synthesize_rotation(vec0, False)
+                                rot1 = cls._synthesize_rotation(vec1, False)
+
+                                prb_gate = ProbabilisticGate(_prob_meas_1, [(rot1.to_instruction(), list(range(n_rest)))], [(rot0.to_instruction(), list(range(n_rest)))], n_rest, None)
+                                new_circ.append(prb_gate, targets_rest)
+                        else:
+                            new_circ.append(instr, qargs, cargs)
+                else:
+                    new_circ.append(instr, qargs, cargs)
+
                 table.reset_state(ind)
                 continue
+
             
             min_contr = cls._minimize_controls(table, instr, qargs)
             if min_contr is not None:
@@ -205,14 +243,16 @@ class ConstantPropagation:
         return table, new_circ
 
     @classmethod
-    def optimize(cls, circuit: QuantumCircuit, max_amplitudes: int | None = None, max_ent_group_size = 1) -> QuantumCircuit:
+    def optimize(cls, circuit: QuantumCircuit, max_amplitudes: int | None = None, max_ent_group_size: int | None = None) -> Tuple[UnionTable, QuantumCircuit]:
         """Perform constant-propagation in-place on *circuit."""
-        table, new_circ = cls._propagate(circuit, max_amplitudes, max_ent_group_size)
+        if max_ent_group_size is None:
+            max_ent_group_size = cls.DEFAULT_MAX_ENT_GROUP_SIZE
+        _, new_circ = cls._propagate(circuit, max_amplitudes, max_ent_group_size)
 
-        return table, new_circ
+        return new_circ
     
     @classmethod
-    def generate_istance(cls, circuit: QuantumCircuit) -> QuantumCircuit:
+    def generate_instance(cls, circuit: QuantumCircuit) -> QuantumCircuit:
         new_circ = QuantumCircuit(circuit.qubits, circuit.clbits)
         clbit_states: dict[Clbit, BitState] = {}
 
@@ -228,33 +268,20 @@ class ConstantPropagation:
                 creg_from_meas = instr.get_creg_from_meas()
                 prob = instr.get_probability()
 
-                # Compiles the probabilistic gate
-                if random.random() < prob:
-                    new_circ.append(instr.get_base_gate(), qargs, cargs)
-                    clbit_states[creg_from_meas] = BitState.ONE
-                else:
-                    clbit_states[creg_from_meas] = BitState.ZERO
-            elif isinstance(instr, BigProbabilisticGate):
-                creg_from_meas = instr.get_creg_from_meas()
-                creg_from_meas_state = BitState.ZERO # Default value
-                probs = instr.get_probabilities()
-                gates_and_ind = instr.get_gates()
-                r = random.random()
-                # Choose one of the element of probs_and_gates according to the probabilities
-                weights = [p for p in probs]
-                # Use random.choices to pick one sequence based on weights
-                selected_seq = random.choices(gates_and_ind, weights=weights, k=1)[0]
-                for g, indices in selected_seq:
-                    new_circ.append(g, indices)
-                    if indices[0] == creg_from_meas._index:
-                        creg_from_meas_state = BitState.ONE
-                clbit_states[creg_from_meas] = creg_from_meas_state
-                    
+                choose_one = random.random() < prob
+                insts = instr.get_inst_if_one() if choose_one else instr.get_inst_if_zero()
+                for gate, indices in insts:
+                    new_circ.append(gate, [qargs[i] for i in indices])
+
+                if creg_from_meas is not None:
+                    clbit_states[creg_from_meas] = BitState.ONE if choose_one else BitState.ZERO
+
 
             elif name_lc == MEASURE_NAME:
                 # When a measurement is performed the bit states of the corresponding measurement operation are set to NOT_KNOWN
                 for c in cargs:
                     clbit_states[c] = BitState.NOT_KNOWN
+                new_circ.append(instr, qargs, cargs)
             elif name_lc == IF_ELSE_NAME:
                 cls._optimize_classic_controlled_operation(new_circ, clbit_states, inst)
 
@@ -264,6 +291,8 @@ class ConstantPropagation:
     
     @classmethod
     def _construct_branch_circuit(cls, table, instr_branch):
+        if instr_branch is None:
+            return []
         qc_branch = []
         for inner_inst in instr_branch:
             qc_then_instr = inner_inst.operation
@@ -336,9 +365,10 @@ class ConstantPropagation:
                         with new_circ.if_test((c, 0 if (1 << c._index) & val_exp == 0 else 1)) as else_:
                             for qc_then_instr, qc_then_qargs, qc_then_cargs in qc_then:
                                 new_circ.append(qc_then_instr, qc_then_qargs, qc_then_cargs)
-                        with else_:
-                            for qc_else_instr, qc_else_qargs, qc_else_cargs in qc_else:
-                                new_circ.append(qc_else_instr, qc_else_qargs, qc_else_cargs)
+                        if len(qc_else) > 0:
+                            with else_:
+                                for qc_else_instr, qc_else_qargs, qc_else_cargs in qc_else:
+                                    new_circ.append(qc_else_instr, qc_else_qargs, qc_else_cargs)
                     else: # Multiple bits as control register
                         # Builds the new condition for the classical controlled operation
                         bits = []
@@ -352,9 +382,10 @@ class ConstantPropagation:
                         with new_circ.if_test(cond) as else_:
                             for qc_then_instr, qc_then_qargs, qc_then_cargs in qc_then:
                                 new_circ.append(qc_then_instr, qc_then_qargs, qc_then_cargs)
-                        with else_:
-                            for qc_else_instr, qc_else_qargs, qc_else_cargs in qc_else:
-                                new_circ.append(qc_else_instr, qc_else_qargs, qc_else_cargs)
+                        if len(qc_else) > 0:
+                            with else_:
+                                for qc_else_instr, qc_else_qargs, qc_else_cargs in qc_else:
+                                    new_circ.append(qc_else_instr, qc_else_qargs, qc_else_cargs)
                     # Set to top all qubits involved in the then-branch and else-branch
                     if table is not None:
                         for qc_then_instr, qc_then_qargs, qc_then_cargs in qc_then:   
@@ -393,9 +424,10 @@ class ConstantPropagation:
                 with new_circ.if_test(res.expr) as else_:
                     for qc_then_instr, qc_then_qargs, qc_then_cargs in qc_then:
                         new_circ.append(qc_then_instr, qc_then_qargs, qc_then_cargs)
-                with else_:
-                    for qc_else_instr, qc_else_qargs, qc_else_cargs in qc_else:
-                        new_circ.append(qc_else_instr, qc_else_qargs, qc_else_cargs)
+                if len(qc_else) > 0:
+                    with else_:
+                        for qc_else_instr, qc_else_qargs, qc_else_cargs in qc_else:
+                            new_circ.append(qc_else_instr, qc_else_qargs, qc_else_cargs)
                 # Set to top all qubits involved in the then-branch and else-branch
                 if table is not None:
                     for qc_then_instr, qc_then_qargs, qc_then_cargs in qc_then:   
@@ -530,8 +562,6 @@ class ConstantPropagation:
         state_preparation = StatePreparation(state_vector)
         # Append the state preparation to the quantum circuit
         qc.append(state_preparation, range(n))
-        # Decompose the state preparation into individual gates
-        #qc = transpile(qc, basis_gates=['h', 'cx', 'rz', 'ry'])
 
         if inverse:
             return qc.inverse()

@@ -1,6 +1,10 @@
 from qiskit.circuit.classical import expr
 from qiskit.circuit import Clbit
-from util.BitState import BitState
+
+if __package__:
+    from .util.BitState import BitState
+else:
+    from util.BitState import BitState
 
 
 class CondResult:
@@ -83,9 +87,12 @@ class SimplifyCondition:
                 if r.always_false:
                     return l
                 if l.always_true:
+                    if r.always_true:
+                        return CondResult(always_false=True)
                     return CondResult(expr_node=expr.bit_not(r.expr))
                 if r.always_true:
                     return CondResult(expr_node=expr.bit_not(l.expr))
+                # TODO: check if the following is correct
                 if l.expr == r.expr:
                     return CondResult(always_false=True)
                 return CondResult(expr_node=expr.Binary(expr.Binary.Op.BIT_XOR, l.expr, r.expr, type=node.type))
@@ -94,4 +101,4 @@ class SimplifyCondition:
                 return CondResult(expr_node=node)
 
         # Unknown node type, return as it is
-        return CondResult(CondResult(node))
+        return CondResult(expr_node=node)
