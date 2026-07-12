@@ -308,8 +308,73 @@ def add_parity_checks_greedy(circuit: QuantumCircuit, backend, max_attempts: int
         # Accept this addition and continue
         working_circuit = best_circuit
         successful_additions += 1
-    
+
     return working_circuit
+
+def discard_parity_violations(counts: Dict[str, int], circuit: QuantumCircuit,
+                               parity_register_prefix: str = "cr_anc") -> Tuple[Dict[str, int], float]:
+    """
+    Classical post-processing counterpart of add_parity_checks_greedy /
+    add_parity_checks_already_mapped: implements the paper's error-detection flag
+    D (§7.2), 𝐷 = 1 − ∏_k (1+𝑚_𝑘)/2, mapping a parity-check outcome bit '0' to
+    𝑚_𝑘=+1 (no violation) and '1' to 𝑚_𝑘=−1 (violation) -- so 𝐷=0 (keep the shot)
+    iff every parity-check bit is '0', and 𝐷=1 (discard) iff any of them is '1'.
+
+    Those two functions only add the ancilla qubits/CNOTs/measurement to the
+    circuit; nothing previously read the resulting classical bits back to actually
+    discard faulty shots, so the fidelity benefit the paper attributes to parity
+    checking was not realized by this codebase before this function existed.
+
+    Args:
+        counts: raw counts dict as returned by `result.get_counts()`, using
+            Qiskit's standard space-separated multi-register bitstring format
+            (most-recently-added register leftmost -- verified empirically, see
+            commit message; not just assumed from the Qiskit docs).
+        circuit: the circuit `counts` was obtained by running. Used to find which
+            of its classical registers are parity-check ancilla registers, and
+            hence which space-separated field(s) of each counts key to check.
+        parity_register_prefix: name prefix used for the ancilla registers --
+            matches `ClassicalRegister(1, f'cr_anc_{i}')` in
+            add_parity_checks_greedy and `ClassicalRegister(num_ancillas, 'cr_anc')`
+            in add_parity_checks_already_mapped.
+
+    Returns:
+        (filtered_counts, discard_fraction): filtered_counts has the parity-check
+        register field(s) stripped out of every key (leaving only the original
+        circuit's registers, re-summed after discarding flagged shots) and
+        discard_fraction is the fraction of total shots that were discarded.
+    """
+    parity_field_positions = [
+        i for i, creg in enumerate(reversed(circuit.cregs))
+        if creg.name.startswith(parity_register_prefix)
+    ]
+
+    if not parity_field_positions:
+        raise ValueError(
+            f"No classical register found with prefix '{parity_register_prefix}' on this "
+            f"circuit -- are these counts actually from add_parity_checks_greedy / "
+            f"add_parity_checks_already_mapped?"
+        )
+
+    filtered_counts: Dict[str, int] = {}
+    discarded = 0
+    total = 0
+
+    for bitstring, count in counts.items():
+        fields = bitstring.split()
+        total += count
+
+        violation = any(bit == '1' for pos in parity_field_positions for bit in fields[pos])
+        if violation:
+            discarded += count
+            continue
+
+        kept_fields = [f for i, f in enumerate(fields) if i not in parity_field_positions]
+        kept_bitstring = " ".join(kept_fields)
+        filtered_counts[kept_bitstring] = filtered_counts.get(kept_bitstring, 0) + count
+
+    discard_fraction = discarded / total if total > 0 else 0.0
+    return filtered_counts, discard_fraction
 
 def count_two_qubit_gates(circuit: QuantumCircuit) -> int:
     """
