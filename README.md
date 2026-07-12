@@ -5,18 +5,37 @@ Mid-circuit Measurement Error Mitigation
 
 The surface-code logical-error-rate simulations (Fig. 3, the Google
 Sycamore motivation figures in § 3.3, and Fig. 13, the 4-panel
-IBM-Heron/futuristic/patches/threshold evaluation in § 8.5) are produced
-with [ECCentric](https://github.com/TUM-DSE/eccentric), pulled in here as
-the `eccentric/` git submodule, pinned to the `mcm-latency-eccentric`
-branch:
+IBM-Heron/futuristic/patches/threshold evaluation in § 8.5) are **not**
+produced by ECCentric itself. They come from **`lattice-sim`**, an
+independent QEC simulator built for:
+
+> S. Maurya and S. Tannu, "Synchronization for Fault-Tolerant Quantum
+> Computers," ISCA 2025. https://doi.org/10.1145/3695053.3730991
+
+`lattice-sim` has its own dedicated artifact on Zenodo:
+https://zenodo.org/records/15092177
+
+For this repo, `lattice-sim` is vendored as the `synchronization-artifact/`
+subfolder inside [ECCentric](https://github.com/TUM-DSE/eccentric) (pulled
+in as the `eccentric/` git submodule here, pinned to the
+`mcm-latency-eccentric` branch) purely as a matter of convenience — the two
+tools share the same Stim/pymatching-based stack, so `lattice-sim` was
+pushed into ECCentric's tree rather than added as a second submodule.
+All CSV generation below lives under `eccentric/synchronization-artifact/`
+and is `lattice-sim`, not ECCentric's own tqec/Stim compilation pipeline
+(`main.py`, `codes/`, etc. at the `eccentric/` root, which is unrelated to
+these figures). The final plot-rendering step (`eccentric/utils/mcm_plot.ipynb`,
+`eccentric/utils/_render_four_panel.py`) does sit at the ECCentric repo root,
+but it's just a thin plotting layer over `lattice-sim`'s CSV output — copied
+into `eccentric/experiment_results/` — not part of `lattice-sim` or ECCentric
+proper.
 
 ```bash
 git submodule update --init --recursive
 ```
 
 See `eccentric/synchronization-artifact/README.md` and
-`eccentric/Dockerfile` for environment setup (Stim + pymatching based
-`lattice-sim`).
+`eccentric/Dockerfile` for environment setup (Stim + pymatching).
 
 ### Fig. 3 — MCM error rate / duration motivation (§ 3.3)
 
