@@ -2,14 +2,118 @@
 
 This directory implements deep-learning and signal-processing classifiers for
 **qubit state discrimination** in superconducting quantum computers.  It covers the
-full HERQULES pipeline (matched-filter pre-processing + neural network classifier) as
-well as three additional neural network approaches: a simple FNN, a Vision-Transformer,
-and KLiNQ — a knowledge-distillation pipeline designed for FPGA deployment.
+full HERQULES pipeline (matched-filter pre-processing + neural network classifier),
+the paper's own MCMit-CNN and MCMit-T (transformer) discriminators, reproductions of
+QubiCML and a raw-trace baseline FNN, and KLiNQ — a knowledge-distillation pipeline
+designed for FPGA deployment.
+
+This directory is synced from the active research workspace at `Oraqle/Discriminators/`
+(kept outside this repo). If you're looking for what actually produces the paper's
+Tables 3–6, start at [Reproducing the MCMit Paper's Discriminator Tables](#reproducing-the-mcmit-papers-discriminator-tables--83).
+
+---
+
+## Reproducing the MCMit Paper's Discriminator Tables (§ 8.3)
+
+Covers the discriminator-comparison tables (Table 3: long-trace accuracy for all 5
+designs; Table 4: accuracy vs. trace length for HERQULES/QubiCML/MCMit-CNN), the
+cross-fidelity/crosstalk table (Table 5), and the accuracy-vs-simultaneous-qubits table
+(Table 6).
+
+**Environment.** These scripts are written to run inside the Docker image built from
+Oraqle's `Dockerfile`, with `/data/five_qubit_data` (raw HDF5 dataset) and
+`/app/optimization_reports` (output CSVs) bind-mounted in — the absolute paths are
+hardcoded in each script's header. `data/five_qubit_data/` and `data/single_qubit_data/`
+in this checkout are placeholders, not the real dataset (see
+[Disclaimer & Research Context](#disclaimer--research-context)); nothing below was run to
+verify numbers in this environment (no GPU/dataset available), only statically
+cross-checked against the code.
+
+### Design → code mapping
+
+| Paper design | Network | Trainer / pipeline |
+|---|---|---|
+| Baseline FNN (Lienhard et al. [62]) | [`networks/SingleQubitFNN.py`](networks/SingleQubitFNN.py)`::SingleQubitFNN_Baseline` | `runners/hyper_optimize.py` |
+| QubiCML (Vora et al., arXiv:2406.18807 [97]) | [`networks/Qubic.py`](networks/Qubic.py)`::Arxiv240618807FNN` | `runners/hyper_optimize.py` |
+| HERQULES (Maurya et al., ISCA'23 [68]) | [`networks/HERQULES.py`](networks/HERQULES.py)`::Net_rmf` | [`trainers/HERQULES_original.py`](trainers/HERQULES_original.py) |
+| MCMit-T (transformer) | [`networks/TransformerMF.py`](networks/TransformerMF.py)`::QubitClassifierTransformerMF` | `runners/hyper_optimize_transformer_mf.py` |
+| MCMit-CNN | [`networks/CNN.py`](networks/CNN.py)`::CNN` | `runners/_colleague_prep.py` (preprocessing) + `runners/_cnn_length_sweep.py` / `runners/_xtalk_cnn.py` |
+
+### Table 3 — accuracy at full 1µs trace, all 5 designs
+
+| Row | Command | Output |
+|---|---|---|
+| Baseline FNN, QubiCML | `python runners/hyper_optimize.py` (500-sample length; calls `optimize_models(["FNN"])` and `optimize_models(["Arxiv240618807FNN"])`) | `optimization_reports/*.csv` |
+| HERQULES | `python runners/_xtalk_herqules_deploy.py` (prints `F5Q (sanity) 0.905`); for a full per-qubit CSV row use `python runners/_herqules_length_both.py` at the `ns=1000` row | `xtalk_HERQULES_deployment.csv` / `herqules_length_faithful_vs_demux.csv` |
+| MCMit-T | `python runners/hyper_optimize_transformer_mf.py` | `optimization_reports/*.csv` |
+| MCMit-CNN | `CNN_LEN=500 python runners/_cnn_length_sweep.py` | `optimization_reports/cnn_length_1000ns.csv` |
+
+No script currently assembles all 5 rows into one table — merge the CSVs by hand, or
+extend `fetch_results.py` / `plot_fidelities.py`'s `master_fidelity.csv` schema.
+
+### Table 4 — accuracy vs. trace length (250 / 500 / 750 ns)
+
+| Row | Command |
+|---|---|
+| HERQULES | `python runners/_herqules_truncation_pertrace.py` (`LENGTHS_NS` already spans 250/500/750; filter rows to `policy=="freeze"` — the no-retrain/frozen-network policy, which reproduces the paper's near-chance HERQULES@250ns numbers) |
+| QubiCML | no dedicated script — reuse `runners/hyper_optimize.py` with `TRACE_LENGTHS=[125,250,375]` (samples for 250/500/750ns) |
+| MCMit-CNN | `CNN_LEN={125,250,375} python runners/_cnn_length_sweep.py` (one run per length) |
+
+`runners/_herqules_truncation_eval.py` is a near-identical alternative on the
+paper-subsampled (3000/7000 shots/class) data rather than the full dataset — use
+`_herqules_truncation_pertrace.py` to stay consistent with the full-data numbers used
+everywhere else in this table.
+
+### Table 5 (cross-fidelity by qubit separation) and Table 6 (accuracy vs. simultaneously-measured qubits N)
+
+Both come from the **same run** of two scripts — each computes the crosstalk
+cross-fidelity metric *and* the accuracy-vs-N sweep (geomean accuracy over all `C(5,N)`
+driven-qubit subsets, other qubits held at ground state) in one pass:
+
+| Design | Command | Output rows |
+|---|---|---|
+| HERQULES | `python runners/_xtalk_herqules_deploy.py` | `xtalk_HERQULES_deployment.csv`: `metric=="crossfid_dist"` → Table 5, `metric=="F_vs_N"` → Table 6 |
+| MCMit-CNN | `python runners/_xtalk_cnn.py` | `xtalk_CNN.csv`: same `metric` column |
+
+### Caveats — read before trusting a number
+
+This sync was done by statically reading the code; nothing here was executed to
+cross-check against the paper's published values (no GPU/dataset in this environment):
+
+- **HERQULES has two parallel implementations.** `trainers/train_HERQULES.py` ("faithful
+  replication," demux-style MF features) gives ~0.925 F5Q; `trainers/HERQULES_original.py`
+  (the original-paper port) with **per-trace, deployment-style** features gives ~0.904–0.905
+  F5Q — the one matching Table 3. Scripts named `*_deploy*`/`*_pertrace*` use the latter;
+  keep any new script on that path too.
+  [`matched_filter.py`](matched_filter.py)`::matched_filter_preprocess_demux` has a
+  `scramble` flag: `scramble=False` (realistic — a feature row's 5 qubit MF scores come
+  from the *same* physical shot) is what the `*_deploy*`/`*_pertrace*` scripts use;
+  `scramble=True` reproduces the original per-(qubit,state) independently-permuted draw.
+- **MCMit-CNN has two preprocessing paths.** `helpers/cnn_helpers.py` (older, ~0.908 F5Q)
+  vs. `runners/_colleague_prep.py` (FFT-based per-qubit frequency/phase calibration +
+  windowed-sinc sparse FIR demod, matching a reference implementation; ~0.911 F5Q, matches
+  Table 3). `_cnn_length_sweep.py` and `_xtalk_cnn.py` both use `_colleague_prep.py` — don't
+  substitute `cnn_helpers.py` in for these tables, even though `hyper_optimize.py` still
+  uses it for the FNN/QubiCML rows.
+- [`networks/HybridCNN.py`](networks/HybridCNN.py) and its `_xtalk_hybridcnn.py` /
+  `train_hybrid_cnn.py` scripts are a separate, earlier CNN design — not the one branded
+  MCMit-CNN in the paper. Kept for reference only; not part of Tables 3–6.
+- `train_arxiv_model.py` (root) has a stale import (`networks.Arxiv240618807FNN`, renamed
+  to `networks/Qubic.py` upstream) and is broken as committed — both here and in the
+  upstream workspace. Use `runners/hyper_optimize.py` for QubiCML instead.
+- `runners/train_three_level_*.py`, `assemble_three_level_table.py`, and
+  `reproduce_klinq_paper.py` belong to a *different* survey (qutrit/|2⟩-leakage
+  three-level discrimination) and were **not** copied into this checkout.
+
+Table 7 (FPGA resource utilization via hls4ml) is not covered by this sync; the relevant
+scripts (`_cnn_shallow_hls.py`, `_cnn_small_hls.py`, `_debug_synth.py`) still live only in
+`Oraqle/Discriminators/`.
 
 ---
 
 ## Table of Contents
 
+0. [Reproducing the MCMit Paper's Discriminator Tables (§ 8.3)](#reproducing-the-mcmit-papers-discriminator-tables--83)
 1. [Physical Background](#physical-background)
 2. [HERQULES Pipeline](#herqules-pipeline)
    - [Overview and Design Philosophy](#overview-and-design-philosophy)
@@ -19,9 +123,10 @@ and KLiNQ — a knowledge-distillation pipeline designed for FPGA deployment.
    - [Stage 4 — Neural Network Classifier](#stage-4--neural-network-classifier)
 3. [Matched Filter Module](#matched-filter-module)
 4. [Additional Model Architectures](#additional-model-architectures)
-   - [arXiv:2406.18807 FNN](#1-arxiv240618807-fnn)
-   - [Transformer (QubitClassifierTransformer)](#2-transformer-qubitclassifiertransformer)
-   - [KLiNQ — Knowledge Distillation Pipeline](#3-klinq--knowledge-distillation-pipeline)
+   - [1. QubiCML (arXiv:2406.18807 FNN)](#1-qubicml-arxiv240618807-fnn)
+   - [2. Transformer (QubitClassifierTransformer / MF variant)](#2-transformer-qubitclassifiertransformer--mf-variant)
+   - [3. MCMit-CNN](#3-mcmit-cnn)
+   - [4. KLiNQ — Knowledge Distillation Pipeline](#4-klinq--knowledge-distillation-pipeline)
 5. [Repository Structure](#repository-structure)
 6. [Data Pipeline](#data-pipeline)
 7. [Usage Instructions](#usage-instructions)
@@ -275,12 +380,16 @@ a given time index, restricting the integration window.
 
 ## Additional Model Architectures
 
-### 1. arXiv:2406.18807 FNN
+### 1. QubiCML (arXiv:2406.18807 FNN)
 
-**File:** [`networks/Arxiv240618807FNN.py`](networks/Arxiv240618807FNN.py)  
-**Training script:** [`train_arxiv_model.py`](train_arxiv_model.py)
+**File:** [`networks/Qubic.py`](networks/Qubic.py) (class `Arxiv240618807FNN`; file renamed
+from `Arxiv240618807FNN.py` — same file, same class name, new module path)  
+**Training script:** `runners/hyper_optimize.py` (`optimize_models(["Arxiv240618807FNN"])`).
+`train_arxiv_model.py` (root) still imports the *old* `networks.Arxiv240618807FNN` path and
+is broken as committed — don't use it, see the [caveats above](#caveats--read-before-trusting-a-number).
 
-A reproduction of the lightweight FNN described in [arXiv:2406.18807](https://arxiv.org/abs/2406.18807).
+This is the paper's "QubiCML" baseline: a reproduction of the lightweight FNN described in
+[arXiv:2406.18807](https://arxiv.org/abs/2406.18807) (Vora et al.).
 
 #### Architecture
 
@@ -316,12 +425,21 @@ The raw 5-qubit multiplexed trace is **demodulated** per qubit before being fed 
 
 ---
 
-### 2. Transformer (QubitClassifierTransformer)
+### 2. Transformer (QubitClassifierTransformer / MF variant)
 
-**File:** [`networks/Transfomer.py`](networks/Transfomer.py)
+**File:** [`networks/Transformer.py`](networks/Transformer.py) (renamed from the typo'd
+`Transfomer.py`)
 
 A Vision-Transformer (ViT) inspired encoder for **direct classification from raw IQ traces**
-across all 32 states simultaneously.
+across all 32 states simultaneously. This is the base architecture; it is not, by itself,
+the paper's **MCMit-T**.
+
+**MCMit-T** is [`networks/TransformerMF.py`](networks/TransformerMF.py)`::QubitClassifierTransformerMF`
+— the same encoder augmented with concatenated HERQULES matched-filter/relaxation-matched-filter
+(MF/RMF) features at the classification head (10-D, built via `trainers/train_HERQULES.py`'s
+`demodulate_all_qubits`/`compute_all_envelopes`/`build_features`). Trained via
+`runners/hyper_optimize_transformer_mf.py`; this MF augmentation is what closes the gap from
+the plain transformer's ~0.906 F5Q to the paper's 0.911 (Table 3).
 
 #### Architecture Overview
 
@@ -361,7 +479,26 @@ Raw IQ trace (batch, 500, 2)
 
 ---
 
-### 3. KLiNQ — Knowledge Distillation Pipeline
+### 3. MCMit-CNN
+
+**File:** [`networks/CNN.py`](networks/CNN.py)`::CNN` — a lightweight residual 1-D CNN:
+strided-convolution temporal downsampling, `ResidualBlock1D` blocks, global average pooling,
+and one binary logit per qubit (multi-task, `in_channels=10, m_param=16, num_qubits=5`).
+
+**Preprocessing:** not `helpers/cnn_helpers.py` (an older path, ~0.908 F5Q) but
+`runners/_colleague_prep.py` — FFT-based per-qubit frequency/phase calibration plus a
+windowed-sinc sparse FIR demodulator, which is what actually reproduces the paper's 0.911
+F5Q (Table 3). See the [caveats above](#caveats--read-before-trusting-a-number).
+
+**Training scripts:** `runners/_cnn_length_sweep.py` (per-length retrain, Table 4) and
+`runners/_xtalk_cnn.py` (crosstalk + accuracy-vs-N, Tables 5–6).
+
+[`networks/HybridCNN.py`](networks/HybridCNN.py) is a separate, earlier CNN design kept for
+reference — it is *not* MCMit-CNN.
+
+---
+
+### 4. KLiNQ — Knowledge Distillation Pipeline
 
 KLiNQ (**K**nowledge-**Li**ght **N**eural-network **Q**ubit-readout) is a two-stage
 distillation framework designed to produce student models small enough for FPGA deployment.
@@ -423,32 +560,55 @@ L_hard = BCEWithLogitsLoss(student, true_labels)
 ```
 qubit_state_discrimination/
 │
-├── HERQULES.py                   ← Full HERQULES training/evaluation pipeline
+├── HERQULES.py                   ← Full HERQULES training/evaluation pipeline (monolith)
 ├── matched_filter.py             ← Matched-filter computation utilities
-├── train_arxiv_model.py          ← Training script for arXiv FNN (5-qubit)
+├── train_arxiv_model.py          ← STALE/broken, see caveats — use runners/hyper_optimize.py
 ├── test.py                       ← Evaluation / inference script
+├── fetch_results.py              ← Aggregates optimization_reports/*.csv
+├── plot_fidelities.py            ← Plots the master_fidelity.csv schema
+├── requirements.txt
 │
 ├── data/
-│   ├── five_qubit_data/          ← Place raw HDF5 dataset files here
+│   ├── five_qubit_data/          ← Place raw HDF5 dataset files here (placeholder only)
 │   └── single_qubit_data/        ← Per-qubit datasets (generated by notebooks)
 │
 ├── helpers/
 │   ├── config.py                 ← All hyper-parameter and path configuration
 │   ├── data_loader.py            ← QubitData class: HDF5 loading + preprocessing
 │   ├── data_utils.py             ← Low-level data utilities (normalisation, MF, etc.)
-│   └── nn_utils.py               ← Loss/optimizer setup, DataLoader creation
+│   ├── nn_utils.py               ← Loss/optimizer setup, DataLoader creation
+│   └── cnn_helpers.py            ← Older CNN preprocessing path (NOT used by Tables 3-6)
 │
 ├── networks/
-│   ├── Arxiv240618807FNN.py      ← 2-hidden-layer FNN (arXiv:2406.18807)
-│   ├── Transfomer.py             ← ViT-style Transformer encoder
-│   ├── SingleQubitFNN.py         ← Large adaptive FNN (KLiNQ teacher)
-│   ├── SingleQubitFNN_StudentModel.py  ← Intermediate student
+│   ├── __init__.py               ← Package-level exports for all architectures
+│   ├── Qubic.py                  ← QubiCML: Arxiv240618807FNN (renamed from Arxiv240618807FNN.py)
+│   ├── HERQULES.py               ← Net / Net_rmf (HERQULES's own network classes)
+│   ├── HERQULESPlus.py           ← Residual-MLP extension over HERQULES LDA features (unused by Tables 3-6)
+│   ├── Transformer.py            ← ViT-style Transformer encoder (renamed from Transfomer.py)
+│   ├── TransformerMF.py          ← MCMit-T: Transformer + HERQULES MF/RMF features
+│   ├── CNN.py                    ← MCMit-CNN: residual 1-D CNN
+│   ├── HybridCNN.py              ← Earlier, non-canonical CNN design (reference only)
+│   ├── SingleQubitFNN.py         ← Parametric FNN + SingleQubitFNN_Baseline (Table 3 "Baseline FNN")
+│   ├── SingleQubitFNN_StudentModel.py  ← Intermediate KLiNQ student
 │   ├── KLiNQ_TeacherModel.py     ← Compact FNN teacher
 │   └── KLiNQ_StudentModel.py     ← Tiny student for FPGA deployment
 │
-├── trainers/                     ← KD and standard training logic
+├── trainers/
+│   ├── HERQULES_original.py      ← Canonical HERQULES pipeline (Tables 3-6)
+│   ├── train_HERQULES.py         ← Alternate "faithful replication" HERQULES (~0.925, not Table 3)
+│   ├── train_HERQULESPlus.py
+│   └── ...                       ← KD and SingleQubitFNN training logic (KLiNQ)
 │
-└── runners/                      ← Executable training scripts
+└── runners/                      ← Executable training/eval scripts
+    ├── hyper_optimize.py                 ← Table 3: Baseline FNN + QubiCML
+    ├── hyper_optimize_transformer_mf.py  ← Table 3: MCMit-T
+    ├── _colleague_prep.py                ← MCMit-CNN preprocessing (imported, not run directly)
+    ├── _cnn_length_sweep.py              ← Tables 3-4: MCMit-CNN
+    ├── _xtalk_cnn.py                     ← Tables 5-6: MCMit-CNN
+    ├── _herqules_truncation_pertrace.py  ← Table 4: HERQULES
+    ├── _herqules_truncation_eval.py      ← Table 4 alt (subsampled data)
+    ├── _herqules_length_both.py          ← Table 3 alt: full per-qubit HERQULES CSV row
+    ├── _xtalk_herqules_deploy.py         ← Tables 5-6: HERQULES
     ├── train_SingleQubitFNN.py
     ├── train_KD_with_SingleQubitFNN.py
     └── train_KD_with_KLinQ_TeacherStudent.py
@@ -553,10 +713,13 @@ overall_acc, per_qubit_acc = test()
 
 ### 5. Run the baseline or neural network models
 
-**arXiv FNN (5-qubit multiplexed):**
+**QubiCML / Baseline FNN (paper Table 3):**
 ```bash
-python train_arxiv_model.py
+python runners/hyper_optimize.py
 ```
+(`train_arxiv_model.py` at the repo root imports a stale module path and is broken as
+committed — use `hyper_optimize.py` instead; see the
+[caveats](#caveats--read-before-trusting-a-number) at the top of this README.)
 
 **KLiNQ teacher training (per qubit):**
 ```bash

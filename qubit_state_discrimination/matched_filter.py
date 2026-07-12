@@ -375,7 +375,7 @@ def matched_filter_preprocess(data, envelopes):
     logger.debug(all_data_after_mf[0][0])
     return all_data_after_mf
 
-def matched_filter_preprocess_demux(data, envelopes):
+def matched_filter_preprocess_demux(data, envelopes, scramble=True):
     """Apply a set of MF envelopes to per-qubit demultiplexed data.
 
     Functionally identical to :func:`matched_filter_preprocess` but operates on
@@ -386,16 +386,37 @@ def matched_filter_preprocess_demux(data, envelopes):
         data (list): Length-5 list; ``data[k]`` is a length-32 list of arrays
             ``(num_samples_i, trace_length, 2)`` for qubit *k*.
         envelopes (list[np.ndarray]): 5 MF envelopes.
+        scramble (bool): If ``True`` (legacy/"fake" behaviour) the per-state
+            shots are independently *permuted* for each qubit before applying
+            the envelope, so a feature row's 5 qubit MF scores come from 5
+            different physical shots (the shot-mixing defect). If ``False``
+            ("realistic") the random subsample/shuffle is drawn ONCE per state
+            and shared across qubits, so each row's 5 scores come from the same
+            physical shot (shot-aligned), while still being randomly subsampled.
 
     Returns:
         np.ndarray: Shape ``(num_basis_states, num_samples_min, num_qubits)``.
     """
+    # FIX (scramble=False): draw the random subsample ONCE per state, OUTSIDE the
+    # per-qubit loop, and reuse it for every qubit -> the shots are still randomly
+    # subsampled/shuffled, but row k of a state is the SAME physical shot for all
+    # five qubits (shot-aligned). scramble=True reproduces the original
+    # per-(qubit, state) independent draw, which mixes each qubit's score across
+    # different shots. (Shot counts per state are identical across qubits, since
+    # data[q][s] are the same acquisitions, so a shared index is valid.)
+    min_ind = min([traces.shape[0] for traces in data[0]])
+    shared_indices = None
+    if not scramble:
+        shared_indices = [np.random.choice(data[0][s].shape[0], min_ind, replace=False)
+                          for s in range(len(data[0]))]
     all_data_after_mf = []  # num_qubits(MFs) * num_basis_state * num_records_per_state
     for idx, envelope in enumerate(envelopes):
         data_per_envelope = []  # num_basis_state * num_records_per_state
-        min_ind = min([traces.shape[0] for traces in data[idx]])
-        for data_per_state in data[idx]:
-            indices = np.random.choice(data_per_state.shape[0], min_ind, replace=False)
+        for s, data_per_state in enumerate(data[idx]):
+            if scramble:
+                indices = np.random.choice(data_per_state.shape[0], min_ind, replace=False)
+            else:
+                indices = shared_indices[s]   # same shots for every qubit
             data_per_state = data_per_state[indices]
             data_per_state = data_per_state.reshape([data_per_state.shape[0], -1])
             data_filtered = np.sum(data_per_state * envelope, axis=1)
