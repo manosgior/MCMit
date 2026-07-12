@@ -1,0 +1,4 @@
+[submodule "eccentric"]
+	path = eccentric
+	url = https://github.com/TUM-DSE/eccentric.git
+	branch = mcm-latency-eccentric
