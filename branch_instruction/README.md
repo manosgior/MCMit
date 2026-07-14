@@ -9,7 +9,7 @@ described in §5.2 and Fig. 6, benchmarked in Table 2.
 
 MCMit's controller is built on top of the open-source
 [QubiC 2.0](https://gitlab.com/LBL-QubiC) framework (Lawrence Berkeley
-National Lab), ref [106] in the paper. Per §8.1: *"We implement the MCMit
+National Lab). Per §8.1: *"We implement the MCMit
 controller on top of the open-source Qubic 2.0 framework by modifying the
 Qubic software (Qubic IR, compiler, assembler, and command generation), the
 Qubic distributed processor, and the Qubic gateware."* Those are exactly
@@ -40,24 +40,20 @@ processor machine code).
 This is where the paper's §5.2 changes live:
 - **ALU**: widened opcode supporting `and`, `or`, `xor`, `maj` (majority
   vote) over up to 32 qubit measurement inputs with a 32-bit qubit-select
-  mask (commits: "Add majority vote operation to ALU", "Add and, or, xor
-  instructions to ALU", "Make the logic operations in ALU bitwise").
+  mask.
 - **Command buffer**: extended from 128 to 160 bits (5×32-bit bus) to carry
-  the wider ALU opcode (commit: "Adjust command to 160 bits in
-  asmparse.py" / "Fix command width in assembler.py").
+  the wider ALU opcode.
 - **Function processor**: modified so the distributed processor core
   receives the *whole* 32-bit measurement register (all qubits) instead of
-  just the single least-significant bit, for `branch_reduce_fproc`
-  (commit: "Add a way to output all qubit measurements at once to fproc").
+  just the single least-significant bit, for `branch_reduce_fproc`.
 
 ### `qubic-gateware/` — the full FPGA build
 
 The complete QubiC 2.0 gateware build (Vivado 2022.1, ZCU216 RFSoC target)
 that instantiates the distributed processor core above as part of the
 whole control system (readout converter, readout/qubit drive, DAC/ADC
-interfaces — Fig. 6). Has cocotb testbenches specifically exercising the
-new instruction (commits: "Add branch maj and xor tests with 1 - 5
-qubits", "Add branch_reduce tests", "Add nested branch_fproc test").
+interfaces — Fig. 6). Has cocotb testbenches exercising the new
+branch/branch_reduce instructions.
 
 **Not vendored here**: this repo's own build depends on four further git
 submodules from the original LBL-QubiC project
@@ -78,13 +74,10 @@ assembler, command generation, calibration, experiment management — the
 ## Provenance
 
 These are **snapshots**, not vendored with git history, to avoid pulling
-in the full upstream LBL-QubiC lineage (594 / 551 / 1335 commits
-respectively, spanning years of the original project's development) into
-MCMit's own history. For the actual commit-by-commit development of the
-`branch_reduce_fproc` feature, see each repo's `branch-reduce` branch
-directly on GitHub (linked in the table above) — e.g. `git log
-origin/branch-reduce` after cloning, or compare against each repo's `main`
-branch to see the diff.
+the full upstream LBL-QubiC lineage (hundreds to thousands of commits
+spanning years of the original project) into MCMit's own history. For the
+full development history, see each repo's `branch-reduce` branch directly
+on GitHub (linked in the table above), or diff it against `main` there.
 
 ## What wasn't touched
 
