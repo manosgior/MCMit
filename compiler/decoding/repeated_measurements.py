@@ -6,7 +6,7 @@ from qiskit.circuit.classical import expr
 from collections import Counter, defaultdict
 from itertools import product
 
-from analysis.dag import *
+from compiler.dag import *
 
 import networkx as nx
 import matplotlib.pyplot as plt

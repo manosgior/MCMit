@@ -36,7 +36,7 @@ Output: results/feedback_latency_impact_32q.csv  (same schema as feedback_latenc
 
 import csv
 import numpy as np
-from analysis.fidelity import idleError
+from evaluation.fidelity import idleError
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Configuration

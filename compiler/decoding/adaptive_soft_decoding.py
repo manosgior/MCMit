@@ -12,7 +12,7 @@ from typing import List, Dict, Set, Tuple
 from collections import defaultdict
 import random
 
-from analysis.dag import *
+from compiler.dag import *
 
 def add_measurement_redundancy(circuit: QuantumCircuit, N: int, M: int) -> QuantumCircuit:
     """

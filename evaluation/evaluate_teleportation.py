@@ -1,7 +1,7 @@
 from applications.quantum_teleportation import *
 from backends.simulator import *
-from analysis.fidelity import *
-from analysis.distribution_processing import *
+from evaluation.fidelity import *
+from evaluation.distribution_processing import *
 
 import argparse
 
