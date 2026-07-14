@@ -1,6 +1,40 @@
 # MCMit
 Mid-circuit Measurement Error Mitigation
 
+## Repository structure
+
+| Path | What it is |
+|---|---|
+| `applications/` | The paper's benchmark circuits: constant-depth GHZ, long-range CNOT, teleportation, qubit reuse |
+| `backends/` | QPU/simulator backend definitions and calibration data |
+| `compiler/branching/` | Stochastic branching (§7.3) |
+| `compiler/decoding/` | Measurement hardening — parity checks, repetition codes (§7.2) |
+| [`compiler/removal/`](compiler/removal/README.md) | Static MCM elimination (§7.1), forked from [pcm-ccop-dc-pass](https://github.com/i2-tum/pcm-ccop-dc-pass) |
+| [`qubit_state_discrimination/`](qubit_state_discrimination/README.md) | MCMit-CNN / MCMit-T discriminators and the HERQULES/QubiCML/baseline comparisons (§6, §8.3) |
+| [`branch_instruction/`](branch_instruction/README.md) | The FPGA controller for `branch_reduce_fproc` (§5), forked from [QubiC](https://gitlab.com/LBL-QubiC) |
+| [`lattice-sim/`](lattice-sim/README.md) | The QEC simulator behind Fig. 3 and Fig. 13 (§3.3, §8.5) — see [reproduction steps below](#reproducing-the-qec-results-surface-code--33-and--85) |
+| `evaluation/` | Per-benchmark evaluation scripts, plus [`evaluation/motivation/MECH/`](evaluation/motivation/MECH/README.md) for Fig. 2 (§3.2) |
+| [`results/`](results/README.md) | Every figure's CSV data, in one place |
+| `plotting/` | The remaining top-level plotting scripts (Fig. 10, 11, 12) |
+
+## Dependencies
+
+MCMit's own code (`applications/`, `backends/`, `compiler/`, `evaluation/`,
+`plotting/`) needs:
+
+- **Qiskit** (`qiskit`, `qiskit-aer`, `qiskit-ibm-runtime`) — circuits, simulation, hardware access
+- **mthree** — Qiskit M3 readout calibration, used by stochastic branching and GHZ evaluation
+- **NumPy**, **pandas**, **NetworkX**, **matplotlib**, **seaborn** — numerics, the DAG compiler pass, plotting
+
+Pinned in [`requirements.txt`](requirements.txt): `pip install -r requirements.txt`.
+
+Each vendored subproject pins its own dependencies separately, since they're
+independent tools with their own environments:
+[`lattice-sim/requirements.txt`](lattice-sim/requirements.txt),
+[`qubit_state_discrimination/requirements.txt`](qubit_state_discrimination/requirements.txt),
+[`evaluation/motivation/MECH/requirements.txt`](evaluation/motivation/MECH/requirements.txt),
+[`branch_instruction/qubic-software/pyproject.toml`](branch_instruction/qubic-software/pyproject.toml).
+
 ## Reproducing the QEC results (surface code, § 3.3 and § 8.5)
 
 The surface-code logical-error-rate simulations (Fig. 3, the Google

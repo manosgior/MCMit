@@ -1,0 +1,24 @@
+# Core dependencies for MCMit's own code: applications/, backends/,
+# compiler/, evaluation/, plotting/.
+#
+# The vendored/imported subprojects each pin their own dependencies
+# separately -- see lattice-sim/requirements.txt,
+# qubit_state_discrimination/requirements.txt,
+# evaluation/motivation/MECH/requirements.txt, and
+# branch_instruction/qubic-software/pyproject.toml.
+
+# Quantum circuits & execution
+qiskit==2.1.0
+qiskit-aer==0.17.1
+qiskit-ibm-runtime==0.40.1
+
+# Readout calibration (Qiskit M3) -- used by compiler/branching/'s
+# stochastic branching and evaluation/evaluate_ghz.py
+mthree==3.0.0
+
+# Numerics / data / plotting
+numpy==2.3.1
+pandas==2.3.0
+networkx==3.5
+matplotlib==3.10.3
+seaborn==0.13.2
