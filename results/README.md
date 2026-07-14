@@ -17,7 +17,7 @@ contain rather than for the script that happened to produce them.
 | `feedback_latency_impact_32q.csv` | Fig. 10, 32-qubit panels | `evaluation/evaluate_decoherence.py` |
 | `readout_duration_teleportation_fidelity.csv` | Fig. 12 — readout duration vs. teleportation fidelity | Generated manually (no tracked script) |
 | `measurement_hardening_majority_voting.csv` | §7.2 — repetition-code / majority-voting fidelity | Per-shot fidelity with and without majority voting, GHZ, several qubit counts |
-| `software_mitigation_fidelity_placeholder.csv` | Fig. 11 — software mitigation fidelity | **Synthetic placeholder, not real data** — see below |
+| `software_mitigation_fidelity.csv` | Fig. 11 — software mitigation fidelity | Real data, pulled from a remote server run |
 
 The six `motivation_*`/`qec_*` files are the canonical Fig. 3/13 QEC data;
 the actual generation pipeline (and its own README) lives in
@@ -25,12 +25,8 @@ the actual generation pipeline (and its own README) lives in
 paper-result CSVs are in one place. If you regenerate them there, re-copy
 into this directory.
 
-## `software_mitigation_fidelity_placeholder.csv` is not real data
-
-Its generator, `evaluation/generate_dummy_input.py`, draws every
-(benchmark, N, method) fidelity independently from
-`np.random.normal(0.5, 0.15)` — Raw, MCMit, and Qiskit M3 are statistically
-identical noise, with no structured improvement pattern. It's a stand-in
-that lets `plotting/plot.py`'s `plot_methods_comparison()` (→
-`plotting/software_performance.pdf`) run without real Fig. 11 data. Treat
-any plot built from this file as a layout check, not a result.
+`evaluation/generate_dummy_input.py` writes a *synthetic* stand-in
+(`results/software_mitigation_fidelity_synthetic_test.csv`, not tracked
+here) used to test the plotting pipeline before the real data above was
+available — deliberately a different filename so re-running it can't
+overwrite the real one.

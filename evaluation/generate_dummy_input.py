@@ -3,7 +3,12 @@ import numpy as np
 import os
 
 # --- Configuration ---
-csv_filename = 'results/software_mitigation_fidelity_placeholder.csv'
+# NOTE: writes synthetic data (np.random.normal per method, no real
+# improvement pattern) -- was used to test the plotting pipeline before
+# real Fig. 11 data was available. Deliberately points somewhere other
+# than results/software_mitigation_fidelity.csv (the real data) so
+# re-running this doesn't silently overwrite it.
+csv_filename = 'results/software_mitigation_fidelity_synthetic_test.csv'
 benchmarks = {
     'Constant-depth GHZ': np.arange(5, 26, 2),            # Odd steps 5 to 25
     'Teleportation-Sequential': np.arange(5, 26, 2),   # Odd steps 5 to 25

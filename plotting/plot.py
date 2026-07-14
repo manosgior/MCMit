@@ -8,7 +8,7 @@ from plotting.utils import *
 
 # --- Configuration ---
 #csv_filename = 'results/feedback_latency_impact_16q.csv'
-#csv_filename = 'results/software_mitigation_fidelity_placeholder.csv'
+#csv_filename = 'results/software_mitigation_fidelity.csv'
 csv_filename = 'results/readout_duration_teleportation_fidelity.csv'
 #output_image_filename = 'plotting/benchmark_fidelity.pdf'
 #output_image_filename = 'plotting/software_performance.pdf'
@@ -38,7 +38,7 @@ num_benchmarks = len(benchmarks)
 
 def plot_methods_comparison(
     thesis: bool = True,
-    csv_filename: str = 'results/software_mitigation_fidelity_placeholder.csv',
+    csv_filename: str = 'results/software_mitigation_fidelity.csv',
     output_filename: str = 'plotting/software_performance.pdf',
 ):
     """Raw vs MCMit vs Qiskit M3 across all four benchmarks (1x4)."""
