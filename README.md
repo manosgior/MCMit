@@ -65,5 +65,12 @@ and reproduction details.
   FPGA-Based Control and Measurement System for Superconducting Quantum
   Information Processors," IEEE Transactions on Quantum Engineering,
   vol. 2, 2021. Source: https://gitlab.com/LBL-QubiC
-- pcm-ccop-dc-pass: https://github.com/i2-tum/pcm-ccop-dc-pass (paper in
-  preparation, per the tool's own README)
+- pcm-ccop-dc-pass: https://github.com/i2-tum/pcm-ccop-dc-pass, based on
+  Y. Chen and Y. Stade, "Quantum Constant Propagation," in Static
+  Analysis (SAS 2023), Springer, pp. 164–189, and extended in
+  Y. Chen, I. Fulginiti, C. B. Mendl, "Reducing Mid-Circuit Measurements
+  via Probabilistic Circuits," QCE 2024.
+  https://ieeexplore.ieee.org/abstract/document/10821341, and
+  "Optimization Framework for Reducing Mid-Circuit Measurements and
+  Resets," Computational Science – ICCS 2025 Workshops, Springer.
+  https://link.springer.com/chapter/10.1007/978-3-031-97570-7_13

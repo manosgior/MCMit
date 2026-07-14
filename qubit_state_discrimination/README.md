@@ -33,9 +33,9 @@ cross-checked against the code.
 
 | Paper design | Network | Trainer / pipeline |
 |---|---|---|
-| Baseline FNN (Lienhard et al. [62]) | [`networks/SingleQubitFNN.py`](networks/SingleQubitFNN.py)`::SingleQubitFNN_Baseline` | `runners/hyper_optimize.py` |
-| QubiCML (Vora et al., arXiv:2406.18807 [97]) | [`networks/Qubic.py`](networks/Qubic.py)`::Arxiv240618807FNN` | `runners/hyper_optimize.py` |
-| HERQULES (Maurya et al., ISCA'23 [68]) | [`networks/HERQULES.py`](networks/HERQULES.py)`::Net_rmf` | [`trainers/HERQULES_original.py`](trainers/HERQULES_original.py) |
+| Baseline FNN (Lienhard et al.) | [`networks/SingleQubitFNN.py`](networks/SingleQubitFNN.py)`::SingleQubitFNN_Baseline` | `runners/hyper_optimize.py` |
+| QubiCML (Vora et al., arXiv:2406.18807) | [`networks/Qubic.py`](networks/Qubic.py)`::Arxiv240618807FNN` | `runners/hyper_optimize.py` |
+| HERQULES (Maurya et al., ISCA'23) | [`networks/HERQULES.py`](networks/HERQULES.py)`::Net_rmf` | [`trainers/HERQULES_original.py`](trainers/HERQULES_original.py) |
 | MCMit-T (transformer) | [`networks/TransformerMF.py`](networks/TransformerMF.py)`::QubitClassifierTransformerMF` | `runners/hyper_optimize_transformer_mf.py` |
 | MCMit-CNN | [`networks/CNN.py`](networks/CNN.py)`::CNN` | `runners/_colleague_prep.py` (preprocessing) + `runners/_cnn_length_sweep.py` / `runners/_xtalk_cnn.py` |
 

@@ -15,6 +15,16 @@ on MCMit's own circuit generators (`applications/constant_depth_GHZ.py`,
 for its benchmarks, so it's folded in here as a proper part of the MCMit
 software rather than kept as a separate sibling checkout.
 
+The pass is based on quantum constant propagation (Y. Chen and Y. Stade,
+"Quantum Constant Propagation," Static Analysis (SAS 2023), Springer,
+pp. 164–189), extended for mid-circuit measurement removal in Y. Chen,
+I. Fulginiti, C. B. Mendl, "Reducing Mid-Circuit Measurements via
+Probabilistic Circuits," QCE 2024
+(https://ieeexplore.ieee.org/abstract/document/10821341) and "Optimization
+Framework for Reducing Mid-Circuit Measurements and Resets," Computational
+Science – ICCS 2025 Workshops, Springer
+(https://link.springer.com/chapter/10.1007/978-3-031-97570-7_13).
+
 ## Quick start
 
 ```python
@@ -46,7 +56,7 @@ inst_2 = ConstantPropagation.generate_instance(prob_circ)
 
 | File | Role |
 |---|---|
-| `ConstantPropagation.py` | The shipped pass (§ 7.1's static MCM elimination, based on quantum constant propagation [22]). Tracks a single deterministic symbolic statevector per entangled group (`UnionTable`); a non-deterministic MCM forces the whole group to be abandoned (capped at 1 eliminable MCM per entangled thread). |
+| `ConstantPropagation.py` | The shipped pass (§ 7.1's static MCM elimination, based on quantum constant propagation — see references above). Tracks a single deterministic symbolic statevector per entangled group (`UnionTable`); a non-deterministic MCM forces the whole group to be abandoned (capped at 1 eliminable MCM per entangled thread). |
 | `BranchingPropagation.py` | Prototype extension: forks a `BranchTree` on every non-deterministic MCM instead of abandoning the group, then merges branches that reconverge to the same physical state. Eliminates *all* eliminable MCMs, at a cost that (for the merged engine, `optimize_merged`) stays polynomial rather than the naive 2^(#MCM). See `MCM_ELIMINATION_ANALYSIS.md`. |
 | `SimplifyCondition.py` | Simplifies classical control-flow conditions (XOR/majority-vote collapsing, condition inversion) once the measurements feeding them are known or partially known — the multi-qubit classical-control-logic extension described in § 7.1. |
 | `UnionTable.py` | Entanglement-aware union-find structure tracking which qubits are jointly represented by a single symbolic state, and the `N_max` cutoff that bounds pass runtime (§ 7.1). |

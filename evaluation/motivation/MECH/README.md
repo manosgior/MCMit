@@ -1,9 +1,10 @@
 # MECH
 
 > **Context for this copy (MCMit repo):** vendored from the artifact for
-> ref [111] (H. Zhang, K. Yin, A. Wu, H. Shapourian, A. Shabani, Y. Ding,
+> H. Zhang, K. Yin, A. Wu, H. Shapourian, A. Shabani, Y. Ding,
 > "MECH: Multi-Entry Communication Highway for Superconducting Quantum
-> Chiplets," ASPLOS'24) -- the DQC chiplet compiler MCMit's motivation
+> Chiplets," ASPLOS 2024 (https://doi.org/10.1145/3620665.3640377) --
+> the DQC chiplet compiler MCMit's motivation
 > section (§3.2, Fig. 2) builds on. **`MECH_line_plot.ipynb` is what
 > generates Fig. 2**: it sweeps the measurement-cost weight, cross-chip
 > weight, and classical feedback latency against the QFT/QAOA/VQE/BV
