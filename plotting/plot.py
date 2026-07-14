@@ -7,9 +7,9 @@ import math
 from plotting.utils import *
 
 # --- Configuration ---
-#csv_filename = 'results/feedbacklatency.csv'
-#csv_filename = 'results/dummy.csv'
-csv_filename = 'results/mcm_latency.csv'
+#csv_filename = 'results/feedback_latency_impact_16q.csv'
+#csv_filename = 'results/software_mitigation_fidelity_placeholder.csv'
+csv_filename = 'results/readout_duration_teleportation_fidelity.csv'
 #output_image_filename = 'plotting/benchmark_fidelity.pdf'
 #output_image_filename = 'plotting/software_performance.pdf'
 output_image_filename = 'plotting/mcm_impact.pdf'
@@ -38,7 +38,7 @@ num_benchmarks = len(benchmarks)
 
 def plot_methods_comparison(
     thesis: bool = True,
-    csv_filename: str = 'results/dummy.csv',
+    csv_filename: str = 'results/software_mitigation_fidelity_placeholder.csv',
     output_filename: str = 'plotting/software_performance.pdf',
 ):
     """Raw vs MCMit vs Qiskit M3 across all four benchmarks (1x4)."""
@@ -144,7 +144,7 @@ def plot_methods_comparison(
 
 def plot_latency_impact(
     thesis: bool = True,
-    csv_filename: str = 'results/mcm_latency.csv',
+    csv_filename: str = 'results/readout_duration_teleportation_fidelity.csv',
     output_filename: str = 'plotting/mcm_impact.pdf',
 ):
     """Feedback-latency sweep (250ns - 1000ns) across two benchmarks (1x2)."""
@@ -324,8 +324,8 @@ def plot_single(xlabel: str):
 
 
 def plot_feedback_impact_4panel(
-    csv_16q: str = 'results/feedbacklatency.csv',
-    csv_32q: str = 'results/decoherence_32q.csv',
+    csv_16q: str = 'results/feedback_latency_impact_16q.csv',
+    csv_32q: str = 'results/feedback_latency_impact_32q.csv',
     output:  str = 'plotting/feedback_impact.pdf',
 ):
     """

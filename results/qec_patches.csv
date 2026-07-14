@@ -1,4 +1,4 @@
-distance,total_patches,measure_latency_ns,measure_error,logical_error_rate
+distance,num_patches,measure_latency_ns,measure_error,logical_error_rate
 7,16,1000,0.089,0.2233
 7,32,1000,0.089,0.27513
 7,48,1000,0.089,0.3251

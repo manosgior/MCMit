@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # Read the CSV file
-df = pd.read_csv('results/dummy.csv')
+df = pd.read_csv('results/software_mitigation_fidelity_placeholder.csv')
 
 # Clean the data
 df.columns = df.columns.str.strip()

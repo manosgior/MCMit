@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 # --- Configuration ---
-csv_filename = 'results/dummy.csv'
+csv_filename = 'results/software_mitigation_fidelity_placeholder.csv'
 benchmarks = {
     'Constant-depth GHZ': np.arange(5, 26, 2),            # Odd steps 5 to 25
     'Teleportation-Sequential': np.arange(5, 26, 2),   # Odd steps 5 to 25

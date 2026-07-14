@@ -31,7 +31,7 @@ n_affected = 1, and naturally makes GHZ decohere faster than CNOT.
 
 No quantum simulation is required.
 
-Output: results/decoherence_32q.csv  (same schema as feedbacklatency.csv)
+Output: results/feedback_latency_impact_32q.csv  (same schema as feedback_latency_impact_16q.csv)
 """
 
 import csv
@@ -57,7 +57,7 @@ T2_S = 130e-6   # seconds  (T2 ≤ 2·T1, physically valid)
 # Instance sweep
 N_VALUES = [10, 50, 100, 250, 500, 750, 1000]
 
-OUTPUT_CSV = "results/decoherence_32q.csv"
+OUTPUT_CSV = "results/feedback_latency_impact_32q.csv"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Analytical decoherence fidelity

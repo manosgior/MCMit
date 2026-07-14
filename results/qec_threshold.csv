@@ -1,4 +1,4 @@
-distance,measure_error,measure_latency_ns,logical_error_rate
+distance,mcm_error,measure_latency_ns,logical_error_rate
 7,0.001,250,0.001382
 7,0.001,500,0.003746
 7,0.001,1000,0.013318
