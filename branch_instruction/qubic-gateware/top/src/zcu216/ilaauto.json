@@ -1,0 +1,14 @@
+{
+	"clk":"dspclk"
+	,"probes":{
+		"dac20axis.cnt":32
+		,"dac20axis.valid":1
+		,"dac20axis.ready":1
+		,"dac20axis.data":256
+		,"dac30axis.cnt":32
+		,"dac30axis.valid":1
+		,"dac30axis.ready":1
+		,"dac30axis.data":256
+	}
+}
+

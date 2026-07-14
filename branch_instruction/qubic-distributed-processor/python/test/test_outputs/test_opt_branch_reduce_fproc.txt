@@ -1,0 +1,159 @@
+{
+    "program": {
+        "block_0": [
+            {
+                "name": "declare",
+                "var": "x",
+                "scope": [
+                    "Q0.qdrv",
+                    "Q0.rdlo",
+                    "Q0.rdrv"
+                ],
+                "dtype": "int"
+            },
+            {
+                "name": "set_var",
+                "var": "x",
+                "value": 5,
+                "scope": [
+                    "Q0.qdrv",
+                    "Q0.rdlo",
+                    "Q0.rdrv"
+                ]
+            }
+        ],
+        "block_0_ctrl": [
+            {
+                "name": "jump_reduce_fproc",
+                "cond_lhs": 5,
+                "alu_cond": "eq",
+                "func_id": "x",
+                "scope": null,
+                "jump_label": "true_0"
+            }
+        ],
+        "false_0": [
+            {
+                "name": "jump_label",
+                "label": "false_0"
+            },
+            {
+                "name": "barrier",
+                "scope": [
+                    "Q1.qdrv",
+                    "Q1.rdlo",
+                    "Q1.rdrv"
+                ]
+            },
+            {
+                "name": "pulse",
+                "freq": "Q1.freq",
+                "twidth": 1.6e-08,
+                "dest": "Q1.qdrv",
+                "phase": 0.0,
+                "amp": 0.6045431013154825,
+                "env": [
+                    {
+                        "env_func": "DRAG",
+                        "paradict": {
+                            "alpha": -0.319135498526078,
+                            "sigmas": 3,
+                            "delta": -268000000.0
+                        }
+                    }
+                ],
+                "tag": "Q1X90"
+            },
+            {
+                "name": "jump_i",
+                "scope": null,
+                "jump_label": "end_0"
+            }
+        ],
+        "true_0": [
+            {
+                "name": "jump_label",
+                "label": "true_0"
+            },
+            {
+                "name": "barrier",
+                "scope": [
+                    "Q0.qdrv",
+                    "Q0.rdlo",
+                    "Q0.rdrv"
+                ]
+            },
+            {
+                "name": "pulse",
+                "freq": "Q0.freq",
+                "twidth": 3.2e-08,
+                "dest": "Q0.qdrv",
+                "phase": 0.0,
+                "amp": 0.12694050581989672,
+                "env": [
+                    {
+                        "env_func": "DRAG",
+                        "paradict": {
+                            "alpha": -0.2624037641352016,
+                            "sigmas": 3,
+                            "delta": -268000000.0
+                        }
+                    }
+                ],
+                "tag": "Q0X90"
+            }
+        ],
+        "end_0": [
+            {
+                "name": "jump_label",
+                "label": "end_0"
+            }
+        ]
+    },
+    "vars": {
+        "x": {
+            "scope": [
+                "Q0.qdrv",
+                "Q0.rdlo",
+                "Q0.rdrv"
+            ],
+            "dtype": "int"
+        }
+    },
+    "freqs": {
+        "Q1.freq": 4706273130.810752,
+        "Q0.freq": 4428998888.444014
+    },
+    "scope": {
+        "block_0": [
+            "Q0.qdrv",
+            "Q0.rdlo",
+            "Q0.rdrv"
+        ],
+        "block_0_ctrl": [],
+        "false_0": [
+            "Q1.qdrv",
+            "Q1.rdlo",
+            "Q1.rdrv"
+        ],
+        "true_0": [
+            "Q0.qdrv",
+            "Q0.rdlo",
+            "Q0.rdrv"
+        ],
+        "end_0": []
+    },
+    "control_flow_graph": {
+        "block_0": [
+            "true_0"
+        ],
+        "block_0_ctrl": [
+            "true_0"
+        ],
+        "false_0": [
+            "end_0"
+        ],
+        "true_0": [],
+        "end_0": []
+    }
+}

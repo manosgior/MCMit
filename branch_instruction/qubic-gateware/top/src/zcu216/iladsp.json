@@ -1,0 +1,30 @@
+{
+	"clk":"dspif.clk"
+	,"probes":{
+		"dspif.addr_rdrvenv[0]":16
+		,"dspif.data_rdrvenv[0]":32
+		,"dspif.addr_rdrvenv[1]":16
+		,"dspif.data_rdrvenv[1]":32
+		,"dspif.addr_rdrvenv[2]":16
+		,"dspif.data_rdrvenv[2]":32
+		,"dspif.addr_rdrvenv[3]":16
+		,"dspif.data_rdrvenv[3]":32
+		,"dspif.stb_start":1
+		,"state":4
+		,"nextstate":4
+		,"procreset":1
+		,"state_dbg[0]":4
+		,"state_dbg[3]":4
+		,"state_dbg[6]":4
+		,"state_dbg[9]":4
+		,"nextstate_dbg[0]":4
+		,"nextstate_dbg[2]":4
+		,"nextstate_dbg[4]":4
+		,"nextstate_dbg[13]":4
+		,"procdone":16
+		,"mixbb1":64
+		,"mixbb2":64
+		,"dspif.shift":5
+	}
+}
+

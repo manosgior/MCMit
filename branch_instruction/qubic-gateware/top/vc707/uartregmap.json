@@ -1,0 +1,20 @@
+{
+"uartmode": {"access": "rw","addr_width": 0,"base_addr": 1,"data_width": 2,"sign": "unsigned","init": 0}
+,"uarti2c": {"access": "rw","addr_width": 0,"base_addr": 2,"data_width": 1,"sign": "unsigned","init": 0}
+,"i2cdatatx": {"access": "rw","addr_width": 0,"base_addr": 3,"data_width": 32,"sign": "unsigned","init": 0}
+,"i2cstart": {"access": "rw","addr_width": 0,"base_addr": 4,"data_width": 32,"sign": "unsigned","init": 0}
+,"i2cdatarx": {"access": "r","addr_width": 0,"base_addr": 5,"data_width": 32,"sign": "unsigned","init": 0}
+,"i2crxvalid": {"access": "r","addr_width": 0,"base_addr": 6,"data_width": 1,"sign": "unsigned","init": 0}
+,"clk4ratio": {"access": "rw","addr_width": 0,"base_addr": 7,"data_width": 32,"sign": "unsigned","init": 5000}
+,"i2cmux_reset_b": {"access": "rw","addr_width": 0,"base_addr": 8,"data_width": 1,"sign": "unsigned","init": 0}
+,"hwreset": {"access": "rw","addr_width": 0,"base_addr": 9,"data_width": 1,"sign": "unsigned","init": 0}
+,"macmsb24": {"access": "r","addr_width": 0,"base_addr": 10,"data_width": 24,"sign": "unsigned","init": 0}
+,"maclsb24": {"access": "r","addr_width": 0,"base_addr": 11,"data_width": 24,"sign": "unsigned","init": 0}
+,"ipaddr": {"access": "r","addr_width": 0,"base_addr": 12,"data_width": 32,"sign": "unsigned","init": 0}
+,"hwresetstatus": {"access": "r","addr_width": 0,"base_addr": 13,"data_width": 32,"sign": "unsigned","init": 0}
+,"mdiodatatx":{"access": "rw", "addr_width": 0, "data_width": 32, "sign": "unsigned", "init": "0", "base_addr": 14}
+,"mdiostart":{"access": "rw", "addr_width": 0, "data_width": 32, "sign": "unsigned", "init": "0", "base_addr": 15}
+,"mdiodatarx":{"access": "r", "addr_width": 0, "data_width": 32, "sign": "unsigned", "init": 0, "base_addr": 16}
+,"mdiorxvalid":{"access": "r", "addr_width": 0, "data_width": 1, "sign": "unsigned", "init": 0, "base_addr": 17}
+,"mdioclk4ratio":{"access": "rw", "addr_width": 0, "data_width": 32, "sign": "unsigned", "init": "1250", "base_addr": 18}
+}

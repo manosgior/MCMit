@@ -1,0 +1,41 @@
+site_name: QubiC Software
+site_url: https://lbl-qubic.gitlab.io/software/
+
+theme:
+  name: "material"
+  palette:
+    scheme: slate
+
+# extra:
+#   version:
+#     provider: mike
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+  - search
+
+nav:
+  - Home: index.md
+  - API Reference:
+    - qubic.toolchain: toolchain.md
+    - qubic.job_manager: job_manager.md
+    - qubic.abstract_runner: abstract_runner.md
+    - qubic.rpc_client: rpc_client.md
+    - qubic.run: run.md
+    - qubic.state_disc: state_disc.md
+    - qubic.soc_rpc_server: soc_rpc_server.md
+    - qubic.job_rpc_server: job_rpc_server.md
+    - pygsti:
+      - qubic.pygsti.job_manager: pygsti_job_manager.md
+      - qubic.pygsti.transpile: pygsti_transpile.md
+    - rfsoc:
+      - qubic.rfsoc.hwconfig: hwconfig.md
+      - qubic.rfsoc.pl_interface: pl_interface.md
+    - results:
+      - qubic.results.counts: counts.md
+      - qubic.results.primitives: primitives.md
+      - qubic.results.tools: results_tools.md

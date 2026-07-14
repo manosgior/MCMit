@@ -1,0 +1,31 @@
+{
+	"clk":"clk250"
+	,"probes":{
+		"hw.vc707.gpio_sw_c":1
+		,"jesdreset":1
+		,"jesd_reset_done":1
+		,"jesd_reset_done_1":1
+		,"jesd_reset_status_1":4
+		,"hw.fmc1.llmk_sclkout_3":1
+		,"adc01_valid":1
+		,"adc23_valid":1
+		,"fmc1_tx_tready":1
+		,"common0_qpll_lock_out_1":1
+		,"common1_qpll_lock_out_2":1
+		,"rxencommaalign":2
+		,"hw.fmc1__adca_sync_in_l_vadj":1
+		,"hw.fmc1__adcb_sync_in_l_vadj":1
+		,"hw.fmc1.dac_sync_req_to_fpga":1
+		,"hw.fmc2__adca_sync_in_l_vadj":1
+		,"hw.fmc2__adcb_sync_in_l_vadj":1
+		,"hw.fmc2.dac_sync_req_to_fpga":1
+		,"dbgt0_rxdata":32
+		,"dbgt0_txdata":32
+		,"dbgt7_rxdata":32
+		,"dbgt7_txdata":32
+		,"adc0":64
+		,"dac0":64
+		,"adc7":64
+		,"dac7":64
+	}
+}

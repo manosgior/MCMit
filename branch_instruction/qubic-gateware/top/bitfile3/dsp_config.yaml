@@ -1,0 +1,60 @@
+cores:
+  qubit: 20
+
+state_disc: y-axis # y-axis or ml
+rc: False
+pce: False
+
+dac_samples_per_clk: 16
+dac_nbits: 16 #per sample
+
+adc_samples_per_clk: 16
+adc_nbits: 16 #per sample
+
+dac_outputs:
+  - sum:
+      dac_ind: 0
+      range: 0, 7
+      sig_gens: qubit.rdrv
+
+  - sum:
+      dac_ind: 1
+      range: 7, 14
+      sig_gens: qubit.rdrv
+      
+  - sum:
+      dac_ind: 2
+      range: 14, 20
+      sig_gens: qubit.rdrv
+
+adc_mix_inputs:
+  - gen:
+      var: i
+      range: 0, 7
+      expr: qubit.rdlo[i] <= 0
+  - gen:
+      var: i
+      range: 7, 14
+      expr: qubit.rdlo[i] <= 1
+  - gen:
+      var: i
+      range: 14, 20
+      expr: qubit.rdlo[i] <= 2
+
+core_defs:
+  qubit:
+    instr_mem_depth: 8192
+    sig_gens:
+      rdrv:
+        type: rf
+        interp_ratio: 16
+        env_mem_depth: 4096 # x32 bit
+        freq_mem_depth: 8192
+        delay: 2
+      rdlo:
+        type: rf_mix
+        interp_ratio: 4
+        env_mem_depth: 4096
+        freq_mem_depth: 8192
+        acc_mem_depth: 1024 # x64
+

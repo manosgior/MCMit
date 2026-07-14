@@ -1,0 +1,17 @@
+xsa_commit: 024756ff # gateware build directory in ~/software/rfsoc/bits
+ip: 192.168.1.120 # change this to your local board IP
+port: 9095 # RPC server port
+log_level: info
+jobserver_mode: False # set this to False unless you are running a dedicated job server (2 server mode)
+platform: rfsoc # set to rfsoc_multiboard if running sync-enabled gateware
+
+## Uncomment this if you want to change the max DAC output levels. 
+## Default is 20,000 UA:
+# dac_current_values: 
+#  0, 2: 40000 #set tile 0, block 2 to 40,000 uA
+
+adc_nyquist_zone: 1 #todo: make this a dict keyed by tile, block
+dac_nyquist_zone: 
+  default: 2
+#    0, 0: 1 add block, tile tuples here to override default
+lmk_freq: 500.18 #500.18 for internal, 500.23 for external/synced

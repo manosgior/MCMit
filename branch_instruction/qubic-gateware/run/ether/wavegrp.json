@@ -1,0 +1,12 @@
+{
+	"bufreadtest":{
+		"reset":{"name":"bufreadtestreset","bit": 0}
+		,"status":{"name":"bufreadtestfull","bit": 0 }
+		,"resetafter":false
+	}
+	,"adc0buf":{
+		"reset":{"name":"adc0bufreset","bit": 0}
+		,"status":{"name":"adc0buffull","bit": 0 }
+		,"resetafter":false
+	}
+}

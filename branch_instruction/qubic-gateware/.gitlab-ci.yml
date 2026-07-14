@@ -1,0 +1,56 @@
+# This file is a template, and might need editing before it works on your project.
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+#
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+image: nfruitwala/cocotb-verilator:0.4
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+#PROC_DRIVER_PATH: submodules/distributed_processor/python
+
+stages:          # List of stages for jobs, and their order of execution
+  - test
+
+before_script:
+  - pip install git+https://gitlab.com/LBL-QubiC/experiments/qubitconfig.git
+  - git clone https://gitlab.com/LBL-QubiC/distributed_processor.git 
+  - pip install -e distributed_processor/python
+    # - pip install -e submodules/distributed_processor/python
+  - git clone https://gitlab.com/LBL-QubiC/software.git 
+  - pip install --upgrade matplotlib
+  - pip install -e software
+  - pip install pyyaml
+
+configure-build:
+  stage: test
+  script:
+    - cd top
+    - ./initialize_build.sh zcu216_test
+    - cd zcu216_test
+    - ./configure_build.sh dsp_config.yaml
+    - ./configure_build.sh dsp_config.yaml sim
+    - cd sim; make pre
+
+test-dsp-zcu216_14_2:
+  stage: test
+  script:
+    - cd top
+    - cd zcu216_14_2
+    - ./configure_build.sh dsp_config.yaml sim
+    - cd sim; make pre
+    - cd ../cocotb
+    - make
+    - python ../../src/check_xml.py results.xml

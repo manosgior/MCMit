@@ -1,0 +1,14 @@
+#Run the qubic single-job RPC server as a systemd service
+# To set up (on ZCU216):
+#   1) put this in in /etc/systemd/system
+#   2) put start_qubic_server.sh in /usr/local/bin/, chown to root, and grant execute permissions
+#       - you'll also need to modify the IP address to match the board's IP
+#   3) you should be able to start the server using 'sudo systemctl start qubic_rpc_server'
+# NOTE: this needs to be a root service in order to load overlays, etc
+
+[Unit]
+Description=ZCU216 Single Job Server
+
+[Service]
+ExecStart=/usr/local/bin/start_qubic_server.sh
+Environment=PYTHONUNBUFFERED=1

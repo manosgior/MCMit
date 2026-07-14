@@ -1,0 +1,83 @@
+ILAICCJSON=ilaiccauto.json
+ilaiccauto.tcl: submodules/tools/ila.py $(ILAICCJSON)
+	python submodules/tools/ila.py -f $(ILAICCJSON) -t $@
+ilaiccauto.vh: submodules/tools/ila.py $(ILAICCJSON)
+	python submodules/tools/ila.py -f $(ILAICCJSON) -v $@
+ILASYSJSON=ilasysauto.json
+ilasysauto.tcl: submodules/tools/ila.py $(ILASYSJSON)
+	python submodules/tools/ila.py -f $(ILASYSJSON) -t $@
+ilasysauto.vh: submodules/tools/ila.py $(ILASYSJSON)
+	python submodules/tools/ila.py -f $(ILASYSJSON) -v $@
+ILAETHJSON=ilaethauto.json
+ilaethauto.tcl: submodules/tools/ila.py $(ILAETHJSON)
+	python submodules/tools/ila.py -f $(ILAETHJSON) -t $@
+ilaethauto.vh: submodules/tools/ila.py $(ILAETHJSON)
+	python submodules/tools/ila.py -f $(ILAETHJSON) -v $@
+ILAJSON=ilaauto.json
+ilaauto.tcl: submodules/tools/ila.py $(ILAJSON)
+	python submodules/tools/ila.py -f $(ILAJSON) -t $@
+ilaauto.vh: submodules/tools/ila.py $(ILAJSON)
+	python submodules/tools/ila.py -f $(ILAJSON) -v $@
+ILAADCJSON=ilaadcauto.json
+ilaadcauto.tcl: submodules/tools/ila.py $(ILAADCJSON)
+	python submodules/tools/ila.py -f $(ILAADCJSON) -t $@
+ilaadcauto.vh: submodules/tools/ila.py $(ILAADCJSON)
+	python submodules/tools/ila.py -f $(ILAADCJSON) -v $@
+ILAHELPJSON=ilahelpauto.json
+ilahelpauto.tcl: submodules/tools/ila.py $(ILAHELPJSON)
+	python submodules/tools/ila.py -f $(ILAHELPJSON) -t $@
+ilahelpauto.vh: submodules/tools/ila.py $(ILAHELPJSON)
+	python submodules/tools/ila.py -f $(ILAHELPJSON) -v $@
+
+#lbread.vh: submodules/tools/lbrw.py regmap.json
+#	python3 submodules/tools/lbrw.py -m regmap.json -b submodules/common-hdl/localbus.json -r lbread.vh
+#lbwrite.vh: submodules/tools/lbrw.py regmap.json
+#	python3 submodules/tools/lbrw.py -m regmap.json -b submodules/common-hdl/localbus.json -w lbwrite.vh
+#lbdefine.vh: submodules/tools/lbrw.py regmap.json
+#	python3 submodules/tools/lbrw.py -m regmap.json -b submodules/common-hdl/localbus.json -d lbdefine.vh
+regmap.json: submodules/tools/localbus.py lbreg.json
+	python3 submodules/tools/localbus.py -m lbreg.json -b submodules/common-hdl/localbus.json -o regmap
+regmap.sv: submodules/tools/localbus.py lbreg.json
+	python3 submodules/tools/localbus.py -m lbreg.json -b submodules/common-hdl/localbus.json -o regmap
+lbclean:
+	rm -rf lbread.vh lbwrite.vh
+
+uartread.vh: submodules/tools/lbrw.py uartregmap.json
+	python3 submodules/tools/lbrw.py -m uartregmap.json -b submodules/common-hdl/localbus.json -r uartread.vh
+uartwrite.vh: submodules/tools/lbrw.py uartregmap.json
+	python3 submodules/tools/lbrw.py -m uartregmap.json -b submodules/common-hdl/localbus.json -w uartwrite.vh
+uartdefine.vh: submodules/tools/lbrw.py uartregmap.json
+	python3 submodules/tools/lbrw.py -m uartregmap.json -b submodules/common-hdl/localbus.json -d uartdefine.vh
+
+iccgt_1G_125M_no8b10b.vh: iccgt_1G_125M_no8b10b.tcl iccgt_1G_125M_no8b10b.py
+	rm -rf tmpproj
+	vivado -mode batch -source $<
+	python gtextract.py tmpproj/tmpproj.gen/sources_1/ip/gtwizard_0/gtwizard_0_gt.v iccgt_1G_125M_no8b10b > $@
+iccgt_1G_125M_50M.vh: iccgt_1G_125M_50M.tcl iccgt_1G_125M_50M.py
+	rm -rf tmpproj
+	vivado -mode batch -source $<
+	python gtextract.py tmpproj/tmpproj.gen/sources_1/ip/gtwizard_0/gtwizard_0_gt.v iccgt_1G_125M_50M > $@
+iccgt_1G_125M_50M_20.vh: iccgt_1G_125M_50M_20.tcl
+	rm -rf tmpproj
+	vivado -mode batch -source $<
+	python gtextract.py tmpproj/tmpproj.gen/sources_1/ip/gtwizard_0/gtwizard_0_gt.v iccgt_1G_125M_50M_20 > $@
+#iccgt.vh: iccgt_4G_125M_100M.tcl tmpprojclean
+iccgt.vh: iccgt_1G_125M_50M.tcl
+	rm -rf tmpproj
+	vivado -mode batch -source $<
+	python gtextract.py tmpproj/tmpproj.gen/sources_1/ip/gtwizard_0/gtwizard_0_gt.v iccgt_1G_125M_50M > iccgt.vh
+#	rm -rf tmpproj
+
+xc7vx485tffg1761pkg.xdc:
+	python xdcgen.py submodules/fpga-family/7series/xc7vx485tffg1761pkg/xc7vx485tffg1761pkg.txt
+
+
+xc7vx485tffg1761pkg.vh:
+	python xdcgen.py submodules/tools/fpga_module.py submodules/fpga-family/7series/xc7vx485tffg1761pkg/xc7vx485tffg1761pkg.txt
+uartclean:
+	rm -rf uartread.vh uartwrite.vh
+ilaclean:
+	rm -rf ilaauto.tcl ilaauto.vh
+tmpprojclean:
+	rm -rf tmpproj
+

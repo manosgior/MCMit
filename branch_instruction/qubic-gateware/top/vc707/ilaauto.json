@@ -1,0 +1,32 @@
+{
+	"clk":"clk125"
+	,"probes":{
+		"uarttx":1
+		,"uartrx":1
+		,"txdata":8
+		,"rxdata":8
+		,"txstart":1
+		,"rxvalid":1
+		,"rxready":1
+		,"uartlb.rcmd":64
+		,"uartlb.wcmd":64
+		,"uartlb.wvalid":1
+		,"uartmode":2
+		,"mdioclk4ratio":32
+		,"stb_mdiostart_d":1
+		,"mdiodatatx":27
+		,"mdiodatarx":27
+		,"mdio_i":1
+		,"mdio_o":1
+		,"mdio_t":1
+		,"phy_int":1
+		,"clk125cnt":32
+		,"phy_mdc_r":1
+		,"phy_reset_r":1
+		,"scl":1
+		,"sdaasrx":1
+		,"sdarx":1
+		,"sdatx":1
+	}
+}
+

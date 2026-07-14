@@ -1,0 +1,82 @@
+# The Docker image that will be used to build your app
+image: 'nfruitwala/cocotb-verilator:latest'
+
+stages:
+  - test
+  - deploy
+
+before_script:
+  - pip install -e .
+  - pip install --upgrade matplotlib
+  - pip install pytest
+  - pip install git+https://gitlab.com/LBL-QubiC/experiments/qubitconfig.git
+  - git clone https://gitlab.com/LBL-QubiC/distributed_processor.git 
+  - pip install -e distributed_processor/python
+  - pip install pyyaml
+
+test-toolchain:
+  stage: test
+  script:
+    - git clone https://gitlab.com/LBL-QubiC/gateware.git --recursive
+    - cd gateware/top/zcu216_3x2_4x1+dc
+    - git checkout 01f5df68abeb3dc5cbaa81c66f221a270bdf24e9
+    - ./configure_build.sh dsp_config.yaml sim
+    - cd sim
+    - make pre
+    - cd ../../../..
+    - export COCOTB_BUILD_PATH=$(pwd)/gateware/top/zcu216_3x2_4x1+dc/cocotb
+    - cd test/toolchain
+    - make
+    - python .check_xml.py results.xml
+
+test-runner:
+  stage: test
+  script:
+    - cd test/runner
+    - pytest
+
+test-results:
+  stage: test
+  script:
+    - cd test/results
+    - pytest
+
+pages:
+  stage: deploy
+  script:
+    - pip install -U pytz
+    - pip install mkdocs
+    - pip install mkdocs-material
+    - pip install mkdocstrings
+    - pip install mkdocstrings-python
+    - pip install -e .
+    - cd docs
+    - mkdocs build
+    - mv site ../public
+  artifacts:
+    paths:
+      # The folder that contains the files to be exposed at the Page URL
+      - public
+  rules:
+    # This ensures that only pushes to the default branch will trigger
+    # a pages deploy
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
+pypi:
+  stage: deploy
+  id_tokens:
+    PYPI_ID_TOKEN:
+      # Use "testpypi" if uploading to TestPyPI
+      aud: pypi
+  script:
+    - pip install build
+    - pip install twine
+    - python -m build
+    - python -m twine upload --repository pypi dist/*
+  environment:
+    name: release
+  rules:
+    # This ensures that only pushes to the default branch will trigger
+    # a pages deploy
+    - if: $CI_COMMIT_TAG
+    

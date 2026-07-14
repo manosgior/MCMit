@@ -1,0 +1,11 @@
+Makefile
+qubic.tcl
+qubic_tb.tcl
+qubic.d
+qubic_tb.d
+regmap.json
+submodules/tools/proj.tcl
+submodules/tools/depsrc.tcl
+submodules/tools/sim.tcl
+submodules/tools/synimpbit.tcl
+bits/storebitshere

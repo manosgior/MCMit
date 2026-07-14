@@ -1,0 +1,34 @@
+{
+	"clk":"hw.vc707.sysclk"
+	,"probes":{
+		"dbdone":32
+		,"eepromrd_x":80
+		,"dbresetout":32
+		,"dbchainnext":4
+		,"dbchainstate":4
+		,"donecriteria_r":32
+		,"uarthwreset":1
+		,"udphwreset":1
+		,"resetin":1
+		,"phy_resetwait_done":1
+		,"phy_resetwait_cnt":32
+	}
+	,"backup":{
+		"dbdonecriteria_sfp":6
+		,"dblocked_sfp":1
+		,"dblocked_smasfp":1
+		,"dbrxcdrlock_sfp":1
+		,"dbrxcdrlock_smasfp":1
+		,"donecriteria":22
+		,"lbreg.sfpresetmask":6
+		,"lbreg.stb_reset_sfp":1
+		,"reset_sfp":1
+		,"reset_sfp_w":1
+		,"reset_smasfp":1
+		,"resetcnt":32
+		,"reseted125":1
+		,"sfpicc.resetdone":1
+		,"sfpreconnected":1
+		,"stbdone":1
+	}
+}

@@ -1,0 +1,16 @@
+[submodule "submodules/board-support"]
+	path = submodules/board-support
+	url = https://gitlab.com/lbl-bids/board-support.git
+[submodule "submodules/common-hdl"]
+	path = submodules/common-hdl
+	url = https://gitlab.com/lbl-bids/common-hdl.git
+[submodule "submodules/fpga-family"]
+	path = submodules/fpga-family
+	url = https://gitlab.com/lbl-bids/fpga-family.git
+[submodule "submodules/tools"]
+	path = submodules/tools
+	url = https://gitlab.com/lbl-bids/tools.git
+[submodule "submodules/distributed_processor"]
+	path = submodules/distributed_processor
+	url = git@github.com:TUM-DSE/qubic-distributed-processor.git
+	branch = branch-reduce

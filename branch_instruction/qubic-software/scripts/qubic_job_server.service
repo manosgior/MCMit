@@ -1,0 +1,5 @@
+[Unit]
+Description=Pinto Job Server
+
+[Service]
+ExecStart=/home/qubic/anaconda3/envs/qubic/bin/python /home/qubic/software/qubic/job_rpc_server.py /home/qubic/jobserver_config.yaml

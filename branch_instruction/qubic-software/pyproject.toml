@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lbl-qubic"
+version = "25.05.4"
+dependencies = [
+    "numpy~=2.2",
+	"scipy",
+	"scikit-learn",
+    "ipdb",
+    "tqdm",
+    "distproc~=25.5.1",
+    "qubitconfig~=25.5.0"
+    ]
+
+requires-python = ">=3.10"
+
+[tool.hatch.build.targets.wheel]
+packages = ["qubic"]
