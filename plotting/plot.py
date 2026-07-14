@@ -10,9 +10,9 @@ from plotting.utils import *
 #csv_filename = 'results/feedbacklatency.csv'
 #csv_filename = 'results/dummy.csv'
 csv_filename = 'results/mcm_latency.csv'
-#output_image_filename = 'benchmark_fidelity.pdf'
-#output_image_filename = 'software_performance.pdf'
-output_image_filename = 'mcm_impact.pdf'
+#output_image_filename = 'plotting/benchmark_fidelity.pdf'
+#output_image_filename = 'plotting/software_performance.pdf'
+output_image_filename = 'plotting/mcm_impact.pdf'
 
 
 x_axes = [
@@ -39,7 +39,7 @@ num_benchmarks = len(benchmarks)
 def plot_methods_comparison(
     thesis: bool = True,
     csv_filename: str = 'results/dummy.csv',
-    output_filename: str = 'software_performance.pdf',
+    output_filename: str = 'plotting/software_performance.pdf',
 ):
     """Raw vs MCMit vs Qiskit M3 across all four benchmarks (1x4)."""
     methods_to_plot = ['Raw', 'MCMit', 'Qiskit M3'] # Order of bars
@@ -145,7 +145,7 @@ def plot_methods_comparison(
 def plot_latency_impact(
     thesis: bool = True,
     csv_filename: str = 'results/mcm_latency.csv',
-    output_filename: str = 'mcm_impact.pdf',
+    output_filename: str = 'plotting/mcm_impact.pdf',
 ):
     """Feedback-latency sweep (250ns - 1000ns) across two benchmarks (1x2)."""
     methods_to_plot = ['250ns', '500ns', '750ns', '1000ns']
@@ -316,7 +316,7 @@ def plot_single(xlabel: str):
         #columnspacing=0.7
     )
     plt.tight_layout() # Adjust subplot spacing
-    plt.savefig("feedback_impact.pdf", dpi=600, )
+    plt.savefig("plotting/feedback_impact.pdf", dpi=600, )
     print(f"Saved combined plot: {output_image_filename}")
     plt.close(fig) # Close the figure
 
@@ -326,7 +326,7 @@ def plot_single(xlabel: str):
 def plot_feedback_impact_4panel(
     csv_16q: str = 'results/feedbacklatency.csv',
     csv_32q: str = 'results/decoherence_32q.csv',
-    output:  str = 'feedback_impact.pdf',
+    output:  str = 'plotting/feedback_impact.pdf',
 ):
     """
     1×4 grouped-bar figure comparing Qubic vs MCMit fidelity for:

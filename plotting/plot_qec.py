@@ -325,7 +325,7 @@ def plot_four_panel(single_csv, patch_csv, mcm_error_csv):
             spine.set_color('gray')  # change border color to gray
     plt.subplots_adjust(left=0.06, right=0.99, bottom=0.35, top=0.85, wspace=0.35)
     fig.patch.set_linewidth(3)
-    plt.savefig("mcm_qec_evaluation.pdf", format="pdf")
+    plt.savefig("plotting/mcm_qec_evaluation.pdf", format="pdf")
     plt.close(fig)
 
 def plot_thesis_qec_panels(single_csv, patch_csv, mcm_error_csv):
