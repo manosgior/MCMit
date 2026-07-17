@@ -68,7 +68,7 @@ class SimplifyCondition:
                     return r
                 if r.always_true:
                     return l
-                return CondResult(expr_node=expr.Binary(expr.Binary.Op.BIT_AND, l.expr, r.expr, type=node.type))
+                return CondResult(expr_node=expr.Binary(expr.Binary.Op.BIT_AND, l.expr, r.expr, node.type))
             elif op == expr.Binary.Op.BIT_OR:
                 l = cls.simplify(left, clbit_states)
                 r = cls.simplify(right, clbit_states)
@@ -78,7 +78,7 @@ class SimplifyCondition:
                     return r
                 if r.always_false:
                     return l
-                return CondResult(expr_node=expr.Binary(expr.Binary.Op.BIT_OR, l.expr, r.expr, type=node.type))
+                return CondResult(expr_node=expr.Binary(expr.Binary.Op.BIT_OR, l.expr, r.expr, node.type))
             elif op == expr.Binary.Op.BIT_XOR:
                 l = cls.simplify(left, clbit_states)
                 r = cls.simplify(right, clbit_states)
@@ -95,7 +95,7 @@ class SimplifyCondition:
                 # TODO: check if the following is correct
                 if l.expr == r.expr:
                     return CondResult(always_false=True)
-                return CondResult(expr_node=expr.Binary(expr.Binary.Op.BIT_XOR, l.expr, r.expr, type=node.type))
+                return CondResult(expr_node=expr.Binary(expr.Binary.Op.BIT_XOR, l.expr, r.expr, node.type))
             else:
                 # Unsupported binary operation
                 return CondResult(expr_node=node)

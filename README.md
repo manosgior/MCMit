@@ -13,7 +13,7 @@ Mid-circuit Measurement Error Mitigation
 | [`qubit_state_discrimination/`](qubit_state_discrimination/README.md) | MCMit-CNN / MCMit-T discriminators and the HERQULES/QubiCML/baseline comparisons (§6, §8.3) |
 | [`branch_instruction/`](branch_instruction/README.md) | The FPGA controller for `branch_reduce_fproc` (§5), forked from [QubiC](https://gitlab.com/LBL-QubiC) |
 | [`lattice-sim/`](lattice-sim/README.md) | The QEC simulator behind Fig. 3 and Fig. 13 (§3.3, §8.5) |
-| `evaluation/` | Per-benchmark evaluation scripts, plus [`evaluation/motivation/MECH/`](evaluation/motivation/MECH/README.md) for Fig. 2 (§3.2) |
+| [`evaluation/`](evaluation/README.md) | Runnable per-figure evaluation drivers, plus [`evaluation/motivation/MECH/`](evaluation/motivation/MECH/README.md) for Fig. 2 (§3.2) |
 | [`results/`](results/README.md) | Every figure's CSV data, in one place |
 | `plotting/` | The remaining top-level plotting scripts (Fig. 10, 11, 12) |
 
