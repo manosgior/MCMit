@@ -35,7 +35,7 @@ for xi, total in zip(x, FEEDBACK_NS):
 # Bracket over all bars: every bar is QubiC
 BRACKET_Y = 860
 ax.plot([-0.3, -0.3, 3.3, 3.3], [BRACKET_Y - 30, BRACKET_Y, BRACKET_Y, BRACKET_Y - 30], color="black", linewidth=1.5)
-ax.text(1.5, BRACKET_Y + 10, "QubiC", ha="center", va="bottom", fontweight="bold")
+ax.text(1.5, BRACKET_Y + 10, "QubiC [4]", ha="center", va="bottom", fontweight="bold")
 
 ax.set_xticks(x, [str(n) for n in N_QUBITS])
 ax.set_xlabel("Qubits in XOR operation (N)")

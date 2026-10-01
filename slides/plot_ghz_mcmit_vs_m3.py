@@ -11,9 +11,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "results" / "software_mitigation_fidelity.csv"
 OUT = Path(__file__).resolve().parent / "figures"
-SERIES = [  # (method, color, marker)
-    ("MCMit", "#77C38A", "o"),
-    ("Qiskit M3", "#F5B07A", "s"),
+SERIES = [  # (method in CSV, legend label, color, marker)
+    ("MCMit", "MCMit", "#77C38A", "o"),
+    ("Qiskit M3", "Qiskit M3 [3]", "#F5B07A", "s"),
 ]
 
 df = pd.read_csv(CSV)
@@ -22,10 +22,10 @@ df = df[df["Benchmark"] == "Constant-depth GHZ"]
 plt.rcParams.update({"font.size": 18, "axes.spines.top": False, "axes.spines.right": False})
 fig, ax = plt.subplots(figsize=(7, 4.5))
 
-for method, color, marker in SERIES:
+for method, label, color, marker in SERIES:
     s = df[df["Method"] == method].sort_values("N")
     ax.plot(s["N"], s["Fidelity"], marker=marker, color=color, linewidth=3, markersize=10,
-            markeredgecolor="black", markeredgewidth=1.2, label=method, zorder=3)
+            markeredgecolor="black", markeredgewidth=1.2, label=label, zorder=3)
 
 ns = sorted(df["N"].unique())
 ax.set_xticks(ns[::2])
