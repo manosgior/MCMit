@@ -24,7 +24,7 @@ x = np.arange(len(p))
 plt.rcParams.update({"font.size": 18, "axes.spines.top": False, "axes.spines.right": False})
 fig, ax = plt.subplots(figsize=(7, 4.5))
 
-ax.bar(x, ler, width=0.6, color=COLOR, edgecolor="black", linewidth=1.2, zorder=2)
+ax.bar(x, ler, width=0.6, color=COLOR, hatch="//", edgecolor="black", linewidth=1.2, zorder=2)
 
 ax.set_yscale("log")
 ax.set_xticks(x, [f"{v:g}" for v in p])
@@ -34,6 +34,9 @@ ax.grid(axis="y", which="major", color="0.85", zorder=0)
 ax.minorticks_off()
 ax.set_yticks([0.1, 0.2, 0.4], ["0.1", "0.2", "0.4"])
 ax.set_ylim(0.07, 0.45)
+
+ax.text(0.5, 1.04, "Lower is better ↓", transform=ax.transAxes, ha="center", va="bottom",
+        fontweight="bold", color="blue")
 
 fig.tight_layout()
 OUT.mkdir(exist_ok=True)
