@@ -16,7 +16,7 @@ OUT = Path(__file__).resolve().parent / "figures"
 DISTANCE = 11
 SERIES = [  # (label, csv, color, hatch)
     ("MCMit", "mcm_tradeoff_mcm_ibm.csv", "#77C38A", "//"),
-    ("HERQULES", "mcm_tradeoff_herqules_ibm.csv", "#F5B07A", "\\\\"),
+    ("HERQULES [2]", "mcm_tradeoff_herqules_ibm.csv", "#F5B07A", "\\\\"),
 ]
 BAR_WIDTH = 0.38
 
