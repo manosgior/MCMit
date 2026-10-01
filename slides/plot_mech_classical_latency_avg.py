@@ -34,14 +34,17 @@ mean = diff.mean(axis=0)
 plt.rcParams.update({"font.size": 18, "axes.spines.top": False, "axes.spines.right": False})
 fig, ax = plt.subplots(figsize=(7, 4.5))
 
-ax.axhline(0, color="0.35", linestyle="--", linewidth=1.2, zorder=1)
+ax.axhline(0, color="0.35", linestyle="--", linewidth=1.2, zorder=2)
 ax.plot(CLASSICAL_LATENCIES, mean, "-o", color=COLOR, linewidth=3, markersize=10,
         markeredgecolor="black", markeredgewidth=1.2, zorder=3)
 
 ax.set_xticks(CLASSICAL_LATENCIES)
+ax.invert_xaxis()  # read left to right as "faster feedback -> shallower circuits"
 ax.set_xlabel("Latency ratio (classical feedback / local CNOT)", fontsize=16)
 ax.set_ylabel("Depth difference")
-ax.grid(axis="y", color="0.85", zorder=0)
+ax.set_yticks([-4, -2, 0])
+for y in (-4, -2):  # manual gridlines; 0 already has the dashed break-even line
+    ax.axhline(y, color="0.85", linewidth=1, zorder=0)
 ax.text(0.5, 1.04, "Higher is better ↑", transform=ax.transAxes, ha="center", va="bottom",
         fontweight="bold", color="blue")
 
