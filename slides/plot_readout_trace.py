@@ -2,7 +2,8 @@
 
 Data: the 5-qubit multiplexed raw IQ dataset (DRaw_C_{Tr,Te}), qubit 4, first 1000 ns (500 samples @ 500 MHz).
 Qubit 4 is digitally demodulated at a refined IF and rotated so the |1>-|0> separation lies on I; only I is plotted.
-  - |0>, |1>     : mean over all test shots with q4 in that state and the other qubits in |0> (35k each)
+  - |0>, |1>     : mean over all test shots with q4 in that state and the other qubits in |0> (35k each);
+                   shaded band = +-1 sigma single-shot spread (shows that early windows overlap)
   - decaying |1> : one real single test shot labelled |1> (DECAY_SHOT), found by fitting a step-down template
 The training file is used only to calibrate the IF and the I/Q rotation.
 Run from the repo root:  python slides/plot_readout_trace.py   (needs h5py; set READOUT_DATA to override)
@@ -30,7 +31,7 @@ DECAY_SHOT = 23945                        # index within the |q4=1> test block
 BLUE, RED, SHADE = "#3B8BDB", "#D9572B", "#F0EDE6"
 PAD = 100                                 # extra samples read past 1000 ns so the FIR has no edge artifact there
 t = np.arange(N_SAMPLES + PAD) / FS
-LOWPASS = firwin(101, 5e6, fs=FS)       # same FIR as runners/_colleague_prep, applied zero-phase 
+LOWPASS = firwin(51, 15e6, fs=FS)       # zero-phase; rejects the other qubits' tones (>=40 MHz away) with little time smearing
 
 
 def windows(f, key, start, n, if_freq, lowpass=False):
@@ -55,6 +56,7 @@ with h5py.File(TEST, "r") as f:
     i0 = (windows(f, "X_test", 0, SHOTS_TEST, if_freq, lowpass=True) * rot).real
     i1 = (windows(f, "X_test", STATE1 * SHOTS_TEST, SHOTS_TEST, if_freq, lowpass=True) * rot).real
 m0, m1, decay = i0.mean(0), i1.mean(0), i1[DECAY_SHOT]
+s0, s1 = i0.std(0), i1.std(0)
 plateau = m1[N_WIN // 2:].mean()
 ring_up_ns = (np.argmax(m1 - m0 >= 0.9 * (plateau - m0[N_WIN // 2:].mean())) + 0.5) * WIN_NS  # 90% of plateau
 
@@ -69,11 +71,13 @@ for side in ("top", "right", "left"):
 ax.spines["bottom"].set_color("0.45")
 
 ax.axvspan(0, ring_up_ns, color=SHADE, zorder=0)
+ax.fill_between(x_ns, with_origin(m0 - s0), with_origin(m0 + s0), color=BLUE, alpha=0.15, lw=0)
+ax.fill_between(x_ns, with_origin(m1 - s1), with_origin(m1 + s1), color=RED, alpha=0.15, lw=0)
 ax.plot(x_ns, with_origin(m0), color=BLUE, lw=3.5, label=r"$|0\rangle$")
 ax.plot(x_ns, with_origin(m1), color=RED, lw=3.5, label=r"$|1\rangle$")
 ax.plot(x_ns, with_origin(decay), color=RED, lw=3.5, ls=(0, (1.2, 1.2)), label=r"$|1\rangle$ that decays mid-readout")
 
-lo, hi = min(m0.min(), decay.min()), max(m1.max(), decay.max())
+lo, hi = min((m0 - s0).min(), decay.min()), max((m1 + s1).max(), decay.max())
 ax.set_ylim(lo - 0.08 * (hi - lo), hi + 0.25 * (hi - lo))
 ax.set_yticks([])
 ax.set_ylabel("I (a.u.)", color="0.3")
