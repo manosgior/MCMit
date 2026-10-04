@@ -65,7 +65,7 @@ x_ns = np.concatenate([[0], (np.arange(N_WIN) + 0.5) * WIN_NS])
 with_origin = lambda v: np.concatenate([[m0[0]], v])
 
 plt.rcParams.update({"font.family": "Lato", "font.size": 20})
-fig, ax = plt.subplots(figsize=(12, 5))
+fig, ax = plt.subplots(figsize=(12, 3.6))
 for side in ("top", "right", "left"):
     ax.spines[side].set_visible(False)
 ax.spines["bottom"].set_color("0.45")
